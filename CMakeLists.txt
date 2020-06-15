@@ -8,6 +8,8 @@ if(CONFIG_UC_USBH)
 		Source/usbh_core.c
 		Source/usbh_hub.c
 		Source/usbh_os.c
-		#zephyr/.c
+		zephyr/lib_math.c
+		zephyr/lib_mem.c
+		zephyr/lib_str.c
 	)
 endif()
