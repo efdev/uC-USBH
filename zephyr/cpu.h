@@ -18,6 +18,7 @@ typedef u16_t CPU_INT16U;
 typedef s16_t CPU_INT16S;
 typedef u32_t CPU_INT32U;
 typedef s32_t CPU_INT32S;
+typedef s64_t CPU_INT64U;
 typedef float CPU_FP32;
 typedef double CPU_FP64;
 typedef void (*CPU_FNCT_PTR)(void *);
@@ -27,5 +28,34 @@ typedef void (*CPU_FNCT_PTR)(void *);
 
 #define DEF_ENABLED 	1
 #define DEF_DISABLED 	0
+
+                                                                /* Define  CPU         word sizes (see Note #1) :       */
+#define  CPU_CFG_ADDR_SIZE              CPU_WORD_SIZE_32        /* Defines CPU address word size  (in octets).          */
+#define  CPU_CFG_DATA_SIZE              CPU_WORD_SIZE_32        /* Defines CPU data    word size  (in octets).          */
+#define  CPU_CFG_DATA_SIZE_MAX          CPU_WORD_SIZE_64        /* Defines CPU maximum word size  (in octets).          */
+
+#define  CPU_CFG_ENDIAN_TYPE            CPU_ENDIAN_TYPE_LITTLE  /* Defines CPU data    word-memory order (see Note #2). */
+
+
+#if     (CPU_CFG_ADDR_SIZE == CPU_WORD_SIZE_32)
+typedef  CPU_INT32U  CPU_ADDR;
+#elif   (CPU_CFG_ADDR_SIZE == CPU_WORD_SIZE_16)
+typedef  CPU_INT16U  CPU_ADDR;
+#else
+typedef  CPU_INT08U  CPU_ADDR;
+#endif
+
+                                                                /* CPU data    type based on data    bus size.          */
+#if     (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_32)
+typedef  CPU_INT32U  CPU_DATA;
+#elif   (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_16)
+typedef  CPU_INT16U  CPU_DATA;
+#else
+typedef  CPU_INT08U  CPU_DATA;
+#endif
+
+
+typedef  CPU_DATA    CPU_ALIGN;                                 /* Defines CPU data-word-alignment size.                */
+typedef  CPU_ADDR    CPU_SIZE_T;                                /* Defines CPU standard 'size_t'   size.                */
 
 #endif

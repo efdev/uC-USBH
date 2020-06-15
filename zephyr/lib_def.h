@@ -132,14 +132,9 @@
 
 
                                                                 /* ----------------- BOOLEAN DEFINES ------------------ */
-#define  DEF_FALSE                                         0u
-#define  DEF_TRUE                                          1u
 
 #define  DEF_NO                                            0u
 #define  DEF_YES                                           1u
-
-#define  DEF_DISABLED                                      0u
-#define  DEF_ENABLED                                       1u
 
 #define  DEF_INACTIVE                                      0u
 #define  DEF_ACTIVE                                        1u

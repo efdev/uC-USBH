@@ -35,7 +35,7 @@
 #define   MICRIUM_SOURCE
 
 #include  <usbh_cfg.h>
-#include  "../../Source/usbh_os.h"
+#include  "usbh_os.h"
 
 
 /*
