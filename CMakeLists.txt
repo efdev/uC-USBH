@@ -11,5 +11,6 @@ if(CONFIG_UC_USBH)
 		zephyr/lib_math.c
 		zephyr/lib_mem.c
 		zephyr/lib_str.c
+		zephyr/cpu_core.c
 	)
 endif()
