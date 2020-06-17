@@ -58,7 +58,7 @@
 
 #define  USBH_HCD_STM32FX_FS_MODULE
 #include  "usbh_hcd_stm32fx_fs.h"
-#include  "Source/usbh_hub.h"
+#include  "usbh_hub.h"
 
 
 /*
