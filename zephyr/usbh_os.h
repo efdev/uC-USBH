@@ -45,7 +45,7 @@
 #include  <lib_def.h>
 #include  <lib_mem.h>
 #include  "usbh_err.h"
-
+#include <zephyr.h>
 
 /*
 *********************************************************************************************************
@@ -73,13 +73,13 @@
 *********************************************************************************************************
 */
 
-typedef  CPU_INT32U  USBH_HSEM;                                 /* Handle on semaphores.                                */
-typedef  CPU_INT32U  USBH_HMUTEX;                               /* Handle on mutex.                                     */
-typedef  CPU_INT32U  USBH_HTASK;                                /* Handle on tasks.                                     */
+typedef  struct k_sem  USBH_HSEM;                                 /* Handle on semaphores.                                */
+typedef  struct k_mutex  USBH_HMUTEX;                               /* Handle on mutex.                                     */
+typedef  struct k_thread  USBH_HTASK;                                /* Handle on tasks.                                     */
 typedef  CPU_INT32U  USBH_HQUEUE;                               /* Handle on queues.                                    */
 typedef  CPU_INT32U  USBH_HTMR;                                 /* Handle on timers.                                    */
 
-typedef  void        (*USBH_TASK_FNCT)(void  *data);            /* Task function.                                       */
+typedef  k_thread_entry_t        USBH_TASK_FNCT;            /* Task function.                                       */
 
 /*
 *********************************************************************************************************

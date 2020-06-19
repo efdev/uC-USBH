@@ -283,7 +283,7 @@ USBH_CLASS_DRV  USBH_HUB_Drv = {
 *********************************************************************************************************
 */
 
-void  USBH_HUB_EventTask (void  *p_arg)
+void  USBH_HUB_EventTask (void  *p_arg, void *p_arg2, void *p_arg3)
 {
     (void)p_arg;
 

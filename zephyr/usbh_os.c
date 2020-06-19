@@ -31,12 +31,12 @@
 *********************************************************************************************************
 */
 
-#define   USBH_OS_MODULE
-#define   MICRIUM_SOURCE
+#define USBH_OS_MODULE
+#define MICRIUM_SOURCE
 
-#include  <usbh_cfg.h>
-#include  "usbh_os.h"
-
+#include "usbh_os.h"
+#include <usbh_cfg.h>
+#include <zephyr.h>
 
 /*
 *********************************************************************************************************
@@ -44,13 +44,16 @@
 *********************************************************************************************************
 */
 
-#define  USBH_OS_MUTEX_REQUIRED             ((((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) * USBH_CFG_MAX_NBR_DEVS) + \
-                                             USBH_CFG_MAX_NBR_DEVS + USBH_CFG_MAX_NBR_HC +                                    \
-                                             USBH_CDC_CFG_MAX_DEV + USBH_HID_CFG_MAX_DEV + USBH_MSC_CFG_MAX_DEV)
-#define  USBH_OS_SEM_REQUIRED               (3u + (((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) * USBH_CFG_MAX_NBR_DEVS))
-#define  USBH_OS_TCB_REQUIRED                 4u
-#define  USBH_OS_Q_REQUIRED                   1u
-
+#define USBH_OS_MUTEX_REQUIRED                                                 \
+	((((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) *               \
+	  USBH_CFG_MAX_NBR_DEVS) +                                             \
+	 USBH_CFG_MAX_NBR_DEVS + USBH_CFG_MAX_NBR_HC + USBH_CDC_CFG_MAX_DEV +  \
+	 USBH_HID_CFG_MAX_DEV + USBH_MSC_CFG_MAX_DEV)
+#define USBH_OS_SEM_REQUIRED                                                   \
+	(3u + (((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) *          \
+	       USBH_CFG_MAX_NBR_DEVS))
+#define USBH_OS_TCB_REQUIRED 4u
+#define USBH_OS_Q_REQUIRED 1u
 
 /*
 *********************************************************************************************************
@@ -58,13 +61,11 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                          LOCAL DATA TYPES
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -72,20 +73,17 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                       LOCAL GLOBAL VARIABLES
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                      LOCAL FUNCTION PROTOTYPES
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -101,11 +99,10 @@
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_LayerInit (void)
+USBH_ERR USBH_OS_LayerInit(void)
 {
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 **************************************************************************************************************
@@ -122,11 +119,10 @@ USBH_ERR  USBH_OS_LayerInit (void)
 **************************************************************************************************************
 */
 
-void  *USBH_OS_VirToBus (void  *x)
+void *USBH_OS_VirToBus(void *x)
 {
-    return (x);
+	return (x);
 }
-
 
 /*
 **************************************************************************************************************
@@ -143,11 +139,10 @@ void  *USBH_OS_VirToBus (void  *x)
 **************************************************************************************************************
 */
 
-void  *USBH_OS_BusToVir (void  *x)
+void *USBH_OS_BusToVir(void *x)
 {
-    return (x);
+	return (x);
 }
-
 
 /*
 *********************************************************************************************************
@@ -171,11 +166,10 @@ void  *USBH_OS_BusToVir (void  *x)
 *********************************************************************************************************
 */
 
-void  USBH_OS_DlyMS (CPU_INT32U  dly)
+void USBH_OS_DlyMS(CPU_INT32U dly)
 {
-    (void)dly;
+	k_msleep((s32_t)dly);
 }
-
 
 /*
 *********************************************************************************************************
@@ -191,11 +185,10 @@ void  USBH_OS_DlyMS (CPU_INT32U  dly)
 *********************************************************************************************************
 */
 
-void  USBH_OS_DlyUS (CPU_INT32U  dly)
+void USBH_OS_DlyUS(CPU_INT32U dly)
 {
-    (void)dly;
+	k_usleep((s32_t)dly);
 }
-
 
 /*
 *********************************************************************************************************
@@ -221,13 +214,12 @@ void  USBH_OS_DlyUS (CPU_INT32U  dly)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_MutexCreate (USBH_HMUTEX  *p_mutex)
+USBH_ERR USBH_OS_MutexCreate(USBH_HMUTEX *p_mutex)
 {
-    (void)p_mutex;
+	k_mutex_init(p_mutex);
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -245,14 +237,14 @@ USBH_ERR  USBH_OS_MutexCreate (USBH_HMUTEX  *p_mutex)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_MutexLock (USBH_HMUTEX  mutex)
+USBH_ERR USBH_OS_MutexLock(USBH_HMUTEX mutex)
 {
-    (void)mutex;
-
-    return (USBH_ERR_NONE);
-
+	int err = k_mutex_lock(&mutex, K_NO_WAIT);
+	if (err != 0) {
+		return USBH_ERR_OS_FAIL;
+	}
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -269,13 +261,14 @@ USBH_ERR  USBH_OS_MutexLock (USBH_HMUTEX  mutex)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_MutexUnlock (USBH_HMUTEX  mutex)
+USBH_ERR USBH_OS_MutexUnlock(USBH_HMUTEX mutex)
 {
-    (void)mutex;
-
-    return (USBH_ERR_NONE);
+	int err = k_mutex_unlock(&mutex);
+	if (err != 0) {
+		return USBH_ERR_OS_FAIL;
+	}
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -293,13 +286,12 @@ USBH_ERR  USBH_OS_MutexUnlock (USBH_HMUTEX  mutex)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_MutexDestroy (USBH_HMUTEX  mutex)
+USBH_ERR USBH_OS_MutexDestroy(USBH_HMUTEX mutex)
 {
-    (void)mutex;
+	(void)mutex;
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -327,15 +319,15 @@ USBH_ERR  USBH_OS_MutexDestroy (USBH_HMUTEX  mutex)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_SemCreate (USBH_HSEM   *p_sem,
-                             CPU_INT32U   cnt)
+USBH_ERR USBH_OS_SemCreate(USBH_HSEM *p_sem, CPU_INT32U cnt)
 {
-    (void)p_sem;
-    (void)cnt;
+	int err = k_sem_init(p_sem, cnt, 1);
+	if (err != 0) {
+		return USBH_ERR_OS_FAIL;
+	}
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -351,13 +343,12 @@ USBH_ERR  USBH_OS_SemCreate (USBH_HSEM   *p_sem,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_SemDestroy (USBH_HSEM  sem)
+USBH_ERR USBH_OS_SemDestroy(USBH_HSEM sem)
 {
-    (void)sem;
+	k_sem_reset(&sem);
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -378,14 +369,17 @@ USBH_ERR  USBH_OS_SemDestroy (USBH_HSEM  sem)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_SemWait (USBH_HSEM   sem,
-                           CPU_INT32U  timeout)
+USBH_ERR USBH_OS_SemWait(USBH_HSEM sem, CPU_INT32U timeout)
 {
-    (void)sem;
+	int err = k_sem_take(&sem, K_MSEC(timeout));
+	if (err == EAGAIN) {
+		return USBH_ERR_OS_TIMEOUT;
+	} else if (err != 0) {
+		return USBH_ERR_OS_FAIL;
+	}
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -404,13 +398,11 @@ USBH_ERR  USBH_OS_SemWait (USBH_HSEM   sem,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_SemWaitAbort (USBH_HSEM  sem)
+USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM sem)
 {
-    (void)sem;
-
-    return (USBH_ERR_NONE);
+	k_sem_reset(&sem);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -427,13 +419,12 @@ USBH_ERR  USBH_OS_SemWaitAbort (USBH_HSEM  sem)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_SemPost (USBH_HSEM  sem)
+USBH_ERR USBH_OS_SemPost(USBH_HSEM sem)
 {
-    (void)sem;
+	k_sem_give(&sem);
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -471,25 +462,13 @@ USBH_ERR  USBH_OS_SemPost (USBH_HSEM  sem)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_TaskCreate (CPU_CHAR        *p_name,
-                              CPU_INT32U       prio,
-                              USBH_TASK_FNCT   task_fnct,
-                              void            *p_data,
-                              CPU_INT32U      *p_stk,
-                              CPU_INT32U       stk_size,
-                              USBH_HTASK      *p_task)
+USBH_ERR USBH_OS_TaskCreate(CPU_CHAR *p_name, CPU_INT32U prio,
+			    USBH_TASK_FNCT task_fnct, void *p_data,
+			    CPU_INT32U *p_stk, CPU_INT32U stk_size,
+			    USBH_HTASK *p_task)
 {
-    (void)p_name;
-    (void)prio;
-    (void)task_fnct;
-    (void)p_data;
-    (void)p_stk;
-    (void)stk_size;
-    (void)p_task;
-
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -521,18 +500,16 @@ USBH_ERR  USBH_OS_TaskCreate (CPU_CHAR        *p_name,
 *********************************************************************************************************
 */
 
-USBH_HQUEUE  USBH_OS_MsgQueueCreate (void        **p_start,
-                                     CPU_INT16U    size,
-                                     USBH_ERR     *p_err)
+USBH_HQUEUE USBH_OS_MsgQueueCreate(void **p_start, CPU_INT16U size,
+				   USBH_ERR *p_err)
 {
-    (void)p_start;
-    (void)size;
+	(void)p_start;
+	(void)size;
 
-   *p_err = USBH_ERR_NONE;
+	*p_err = USBH_ERR_NONE;
 
-    return ((USBH_HQUEUE)0);
+	return ((USBH_HQUEUE)0);
 }
-
 
 /*
 *********************************************************************************************************
@@ -551,15 +528,13 @@ USBH_HQUEUE  USBH_OS_MsgQueueCreate (void        **p_start,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_OS_MsgQueuePut (USBH_HQUEUE   msg_q,
-                               void         *p_msg)
+USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE msg_q, void *p_msg)
 {
-    (void)msg_q;
-    (void)p_msg;
+	(void)msg_q;
+	(void)p_msg;
 
-    return (USBH_ERR_NONE);
+	return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -586,15 +561,13 @@ USBH_ERR  USBH_OS_MsgQueuePut (USBH_HQUEUE   msg_q,
 *********************************************************************************************************
 */
 
-void  *USBH_OS_MsgQueueGet (USBH_HQUEUE   msg_q,
-                            CPU_INT32U    timeout,
-                            USBH_ERR     *p_err)
+void *USBH_OS_MsgQueueGet(USBH_HQUEUE msg_q, CPU_INT32U timeout,
+			  USBH_ERR *p_err)
 {
-    (void)msg_q;
-    (void)timeout;
+	(void)msg_q;
+	(void)timeout;
 
-   *p_err = USBH_ERR_NONE;
+	*p_err = USBH_ERR_NONE;
 
-    return ((void *)0);
+	return ((void *)0);
 }
-

@@ -122,7 +122,7 @@ void        USBH_HUB_ParseHubDesc  (USBH_HUB_DESC  *p_hub_desc,
 void        USBH_HUB_FmtHubDesc    (USBH_HUB_DESC  *p_hub_desc,
                                     void           *p_buf_dest);
 
-void        USBH_HUB_EventTask     (void           *p_arg);
+void        USBH_HUB_EventTask     (void           *p_arg, void *p_arg2, void *p_arg3);
 
 
 /*
