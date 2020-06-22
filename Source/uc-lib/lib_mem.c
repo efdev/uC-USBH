@@ -50,7 +50,7 @@
 #include  "lib_mem.h"
 #include  "lib_math.h"
 #include  "lib_str.h"
-
+#include <zephyr.h>
 
 /*
 *********************************************************************************************************
@@ -2576,6 +2576,7 @@ static  void  *Mem_SegAllocExtCritical (MEM_SEG     *p_seg,
         }
 
        *p_err = LIB_MEM_ERR_SEG_OVF;
+       printk("%d < %d \n", size_rem_seg, size_tot_blk);
         return (DEF_NULL);
     }
 

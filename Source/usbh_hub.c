@@ -425,6 +425,7 @@ static  void  USBH_HUB_GlobalInit (USBH_ERR  *p_err)
                            &octets_reqd,
                            &err_lib);
     if (err_lib != LIB_MEM_ERR_NONE) {
+        printk("error %d\n", err_lib);
        *p_err = USBH_ERR_ALLOC;
         return;
     }

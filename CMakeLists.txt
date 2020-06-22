@@ -4,7 +4,7 @@ if(CONFIG_UC_USBH)
 	zephyr_include_directories(Source/uc-cpu Source/uc-lib HCD/STM32F_FS zephyr Source)
 
 	zephyr_library_sources(
-		#Source/usbh_class.c
+		Source/usbh_class.c
 		Source/usbh_core.c
 		Source/usbh_hub.c
 		zephyr/usbh_os.c
