@@ -17,93 +17,76 @@
 /*
 *********************************************************************************************************
 *
-*                                    ATSAMX HOST CONTROLLER DRIVER
+*                        USB HOST DRIVER BOARD SUPPORT PACKAGE (BSP) FUNCTIONS
 *
-* Filename : usbh_hcd_atsamx.h
+*                                              TEMPLATE
+*
+* Filename : bsp_usbh_template.h
 * Version  : V3.42.00
 *********************************************************************************************************
 */
 
-#ifndef  USBH_HCD_ATSAMX_H
-#define  USBH_HCD_ATSAMX_H
+/*
+*********************************************************************************************************
+*                                               MODULE
+*
+* Note(s) : (1) This USB host driver board-specific function header file is protected from multiple
+*               pre-processor inclusion through use of the USB host configuration module present pre-
+*               processor macro definition.
+*********************************************************************************************************
+*/
+
+#ifndef  BSP_USBH_PRESENT                                       /* See Note #1.                                         */
+#define  BSP_USBH_PRESENT
 
 
 /*
 *********************************************************************************************************
-*                                              INCLUDE FILES
+*                                            INCLUDE FILES
 *********************************************************************************************************
 */
 
+#include  "usbh_hcd_atsamx.h"
 #include  "usbh_core.h"
 
 
 /*
 *********************************************************************************************************
-*                                                 EXTERNS
+*                                     EXTERNAL C LANGUAGE LINKAGE
+*
+* Note(s) : (1) C++ compilers MUST 'extern'ally declare ALL C function prototypes & variable/object
+*               declarations for correct C language linkage.
 *********************************************************************************************************
 */
 
-#ifdef   USBH_HCD_ATSAMX_MODULE
-#define  USBH_HCD_ATSAMX_EXT
-#else
-#define  USBH_HCD_ATSAMX_EXT  extern
+#ifdef __cplusplus
+extern  "C" {                                                   /* See Note #1.                                         */
 #endif
 
 
 /*
 *********************************************************************************************************
-*                                                 DEFINES
+*                                          GLOBAL VARIABLES
 *********************************************************************************************************
 */
+
+extern  USBH_HC_BSP_API  USBH_DrvBSP_Template;
 
 
 /*
 *********************************************************************************************************
-*                                               DATA TYPES
+*                                   EXTERNAL C LANGUAGE LINKAGE END
 *********************************************************************************************************
 */
+
+#ifdef __cplusplus
+}                                                               /* End of 'extern'al C lang linkage.                    */
+#endif
 
 
 /*
 *********************************************************************************************************
-*                                            GLOBAL VARIABLES
-*
-* Note(s) : (1) The following MCUs are supported by USBH_ATSAMX_HCD_DrvAPI:
-*                   Microchip ATSAM D5x/E5x
-*
-*           (2) Due to hardware limitations, the ATSAM D5x/E5x host controller does not support a
-*               combination of Full-Speed HUB + Low-Speed device
-*********************************************************************************************************
-*/
-
-USBH_HCD_ATSAMX_EXT  USBH_HC_DRV_API  USBH_ATSAMX_HCD_DrvAPI;   /* See note 2.                                          */
-USBH_HCD_ATSAMX_EXT  USBH_HC_RH_API   USBH_ATSAMX_HCD_RH_API;
-
-
-/*
-*********************************************************************************************************
-*                                                 MACROS
-*********************************************************************************************************
-*/
-
-
-/*
-*********************************************************************************************************
-*                                           FUNCTION PROTOTYPES
-*********************************************************************************************************
-*/
-
-
-/*
-*********************************************************************************************************
-*                                          CONFIGURATION ERRORS
-*********************************************************************************************************
-*/
-
-
-/*
-*********************************************************************************************************
-*                                               MODULE END
+*                                             MODULE END
 *********************************************************************************************************
 */
 

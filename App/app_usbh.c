@@ -167,8 +167,8 @@ CPU_BOOLEAN  App_USBH_Init (void)
 #endif
 
     hc_nbr = USBH_HC_Add(&USBH_HC_TemplateCfg,
-                         &USBH_TemplateHCD_DrvAPI,
-                         &USBH_TemplateHCD_RH_API,
+                         &USBH_STM32FX_FS_HCD_DrvAPI,
+                         &USBH_STM32FX_FS_HCD_RH_API,
                          &USBH_DrvBSP_Template,
                          &err);
     if (err != USBH_ERR_NONE) {

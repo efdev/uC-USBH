@@ -1,7 +1,7 @@
 if(CONFIG_UC_USBH)
 	zephyr_library()
 
-	zephyr_include_directories(Source/uc-cpu Source/uc-lib HCD/STM32F_FS zephyr Source)
+	zephyr_include_directories(Source/uc-cpu Source/uc-lib HCD/ATSAMx zephyr Source)
 
 	zephyr_library_sources(
 		Source/usbh_class.c
@@ -14,9 +14,9 @@ if(CONFIG_UC_USBH)
 		Source/uc-cpu/cpu_core.c
 		zephyr/usbh_hc_cfg.c
 		Source/uc-lib/lib_ascii.c
-
+		zephyr/bsp_usbh_template.c
 		# Host Controller Driver 
-		HCD/STM32F_FS/usbh_hcd_stm32fx_fs.c
+		HCD/ATSAMx/usbh_hcd_atsamx.c
 		#zephyr/cpu_a.s
 	)
 endif()

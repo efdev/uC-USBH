@@ -23,8 +23,9 @@ typedef float CPU_FP32;
 typedef double CPU_FP64;
 typedef void (*CPU_FNCT_PTR)(void *);
 typedef volatile uint8_t CPU_REG08;
+typedef volatile uint16_t CPU_REG16;
 typedef volatile uint32_t CPU_REG32;
-
+typedef k_thread_stack_t CPU_STK;
 #define DEF_TRUE true
 #define DEF_FALSE false
 

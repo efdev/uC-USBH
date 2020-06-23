@@ -35,7 +35,7 @@
 
 #define  USBH_HCD_ATSAMX_MODULE
 #include  "usbh_hcd_atsamx.h"
-#include  "../../Source/usbh_hub.h"
+#include  "usbh_hub.h"
 
 
 /*

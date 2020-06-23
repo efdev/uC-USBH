@@ -59,7 +59,7 @@
 #define  USBH_HCD_STM32FX_FS_MODULE
 #include  "usbh_hcd_stm32fx_fs.h"
 #include  "usbh_hub.h"
-
+#include "zephyr.h"
 
 /*
 *********************************************************************************************************
@@ -645,8 +645,6 @@ static  void  USBH_STM32FX_HCD_Init (USBH_HC_DRV  *p_hc_drv,
     USBH_DRV_DATA  *p_drv_data;
     CPU_SIZE_T      octets_reqd;
     LIB_ERR         err_lib;
-
-
     p_drv_data = (USBH_DRV_DATA *)Mem_HeapAlloc(sizeof(USBH_DRV_DATA),
                                                 sizeof(CPU_ALIGN),
                                                &octets_reqd,
