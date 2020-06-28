@@ -3,7 +3,6 @@
 
 config UC_USBH
 	bool "uC USB Host support"
-	depends on USB
 
 if UC_USBH
 

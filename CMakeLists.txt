@@ -17,6 +17,5 @@ if(CONFIG_UC_USBH)
 		zephyr/bsp_usbh_template.c
 		# Host Controller Driver 
 		HCD/ATSAMx/usbh_hcd_atsamx.c
-		#zephyr/cpu_a.s
 	)
 endif()

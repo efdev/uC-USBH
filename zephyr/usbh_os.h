@@ -76,7 +76,7 @@
 typedef  struct k_sem  USBH_HSEM;                                 /* Handle on semaphores.                                */
 typedef  struct k_mutex  USBH_HMUTEX;                               /* Handle on mutex.                                     */
 typedef  struct k_thread  USBH_HTASK;                                /* Handle on tasks.                                     */
-typedef  CPU_INT32U  USBH_HQUEUE;                               /* Handle on queues.                                    */
+typedef  struct k_msgq  USBH_HQUEUE;                               /* Handle on queues.                                    */
 typedef  CPU_INT32U  USBH_HTMR;                                 /* Handle on timers.                                    */
 
 typedef  k_thread_entry_t        USBH_TASK_FNCT;            /* Task function.                                       */
@@ -139,16 +139,17 @@ USBH_ERR      USBH_OS_TaskCreate     (CPU_CHAR         *p_name,
                                       USBH_HTASK       *p_task);
 
                                                                 /* --------------- MSG QUEUE FUNCTIONS ---------------- */
-USBH_HQUEUE   USBH_OS_MsgQueueCreate (void            **p_start,
-                                      CPU_INT16U        size,
-                                      USBH_ERR         *p_err);
+// USBH_HQUEUE   USBH_OS_MsgQueueCreate (void            **p_start,
+//                                       CPU_INT16U        size,
+//                                       USBH_ERR         *p_err);
 
-USBH_ERR      USBH_OS_MsgQueuePut    (USBH_HQUEUE       msg_q,
+USBH_ERR      USBH_OS_MsgQueuePut    (USBH_HQUEUE      *msg_q,
                                       void             *p_msg);
 
-void         *USBH_OS_MsgQueueGet    (USBH_HQUEUE       msg_q,
+void         USBH_OS_MsgQueueGet    (USBH_HQUEUE       *msg_q,
                                       CPU_INT32U        timeout,
-                                      USBH_ERR         *p_err);
+                                      USBH_ERR         *p_err,
+                                      void* p_data);
 
                                                                 /* ----------- INTERNAL USE TIMER FUNCTIONS ----------- */
 USBH_HTMR     USBH_OS_TmrCreate      (CPU_CHAR         *p_name,

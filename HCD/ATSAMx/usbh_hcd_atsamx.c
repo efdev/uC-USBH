@@ -305,11 +305,12 @@ typedef  struct  usbh_drv_data {
 */
 
 static            MEM_POOL     ATSAMX_DrvMemPool;
-static  volatile  USBH_HQUEUE  ATSAMX_URB_Proc_Q;
-static            USBH_URB     ATSAMX_Q_UrbEp[ATSAMX_URB_PROC_Q_MAX];
-static            CPU_STK      ATSAMX_URB_ProcTaskStk[ATSAMX_URB_PROC_TASK_STK_SIZE];
+// static  volatile  USBH_HQUEUE  ATSAMX_URB_Proc_Q;
+//static            USBH_URB     ATSAMX_Q_UrbEp[ATSAMX_URB_PROC_Q_MAX];
+// static            CPU_STK      ATSAMX_URB_ProcTaskStk[ATSAMX_URB_PROC_TASK_STK_SIZE];
 
-
+K_MSGQ_DEFINE(ATSAMX_URB_Proc_Q, sizeof(USBH_URB), ATSAMX_URB_PROC_Q_MAX, 4);
+K_THREAD_STACK_DEFINE(ATSAMX_URB_ProcTaskStk, ATSAMX_URB_PROC_TASK_STK_SIZE);
 /*
 *********************************************************************************************************
 *                                       DRIVER FUNCTION PROTOTYPES
@@ -415,7 +416,7 @@ static  CPU_BOOLEAN    USBH_ATSAMX_HCD_RHSC_IntDis     (USBH_HC_DRV            *
 
 static  void           USBH_ATSAMX_ISR_Handler         (void                   *p_drv);
 
-static  void           USBH_ATSAMX_URB_ProcTask        (void                   *p_arg);
+static  void           USBH_ATSAMX_URB_ProcTask        (void                   *p_arg, void *p_arg2, void *p_arg3);
 
 static  CPU_INT08U     USBH_ATSAMX_GetFreePipe         (USBH_DRV_DATA          *p_drv_data);
 
@@ -558,24 +559,30 @@ static  void  USBH_ATSAMX_HCD_Init (USBH_HC_DRV  *p_hc_drv,
         return;
     }
 
-    ATSAMX_URB_Proc_Q = USBH_OS_MsgQueueCreate((void *)&ATSAMX_Q_UrbEp[0u],
-                                                        ATSAMX_URB_PROC_Q_MAX,
-                                                        p_err);
-    if (*p_err != USBH_ERR_NONE) {
-        return;
-    }
+    // ATSAMX_URB_Proc_Q = USBH_OS_MsgQueueCreate((void *)&ATSAMX_Q_UrbEp[0u],
+    //                                                     ATSAMX_URB_PROC_Q_MAX,
+    //                                                     p_err);
+    // if (*p_err != USBH_ERR_NONE) {
+    //     return;
+    // }
 
                                                                 /* Create URB Process task for URB handling.            */
-   *p_err = USBH_OS_TaskCreate(              "ATSAMX URB Process",
-                                              ATSAMX_URB_PROC_TASK_PRIO,
-                                             &USBH_ATSAMX_URB_ProcTask,
-                               (void       *) p_hc_drv,
-                               (CPU_INT32U *)&ATSAMX_URB_ProcTaskStk[0u],
-                                              ATSAMX_URB_PROC_TASK_STK_SIZE,
-                                             &htask);
-    if (*p_err != USBH_ERR_NONE) {
-        return;
-    }
+//    *p_err = USBH_OS_TaskCreate(              "ATSAMX URB Process",
+//                                               ATSAMX_URB_PROC_TASK_PRIO,
+//                                              &USBH_ATSAMX_URB_ProcTask,
+//                                (void       *) p_hc_drv,
+//                                (CPU_INT32U *)&ATSAMX_URB_ProcTaskStk[0u],
+//                                               ATSAMX_URB_PROC_TASK_STK_SIZE,
+//                                              &htask);
+//     if (*p_err != USBH_ERR_NONE) {
+//         return;
+//     }
+
+	k_tid_t ATSAMX_URB_Process_Tid =
+		k_thread_create(&htask, ATSAMX_URB_ProcTaskStk,
+				K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
+				USBH_ATSAMX_URB_ProcTask, (void*) p_hc_drv, NULL, NULL,
+				ATSAMX_URB_PROC_TASK_PRIO, 0, K_NO_WAIT);
 
    *p_err = USBH_ERR_NONE;
 }
@@ -1877,7 +1884,7 @@ static  void  USBH_ATSAMX_ISR_Handler (void  *p_drv)
                     USBH_URB_Done(p_urb);                       /* Notify the Core layer about the URB completion       */
 
                 } else {
-                    p_urb->Err = USBH_OS_MsgQueuePut(        ATSAMX_URB_Proc_Q,
+                    p_urb->Err = USBH_OS_MsgQueuePut(        &ATSAMX_URB_Proc_Q,
                                                      (void *)p_urb);
                     if (p_urb->Err != USBH_ERR_NONE) {
                         USBH_URB_Done(p_urb);                   /* Notify the Core layer about the URB completion       */
@@ -1892,7 +1899,7 @@ static  void  USBH_ATSAMX_ISR_Handler (void  *p_drv)
                     USBH_URB_Done(p_urb);                       /* Notify the Core layer about the URB completion       */
 
                 } else {
-                    p_urb->Err = USBH_OS_MsgQueuePut(        ATSAMX_URB_Proc_Q,
+                    p_urb->Err = USBH_OS_MsgQueuePut(        &ATSAMX_URB_Proc_Q,
                                                      (void *)p_urb);
                     if (p_urb->Err != USBH_ERR_NONE) {
                         USBH_URB_Done(p_urb);                   /* Notify the Core layer about the URB completion       */
@@ -1921,12 +1928,12 @@ static  void  USBH_ATSAMX_ISR_Handler (void  *p_drv)
 *********************************************************************************************************
 */
 
-static void  USBH_ATSAMX_URB_ProcTask (void  *p_arg)
+static void  USBH_ATSAMX_URB_ProcTask (void  *p_arg, void *p_arg2, void *p_arg3)
 {
     USBH_HC_DRV      *p_hc_drv;
     USBH_DRV_DATA    *p_drv_data;
     USBH_ATSAMX_REG  *p_reg;
-    USBH_URB         *p_urb;
+    USBH_URB         *p_urb = NULL;
     CPU_INT32U        xfer_len;
     CPU_INT08U        pipe_nbr;
     USBH_ERR          p_err;
@@ -1937,9 +1944,9 @@ static void  USBH_ATSAMX_URB_ProcTask (void  *p_arg)
     p_reg      = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
 
     while (DEF_TRUE) {
-        p_urb = (USBH_URB *)USBH_OS_MsgQueueGet( ATSAMX_URB_Proc_Q,
+        USBH_OS_MsgQueueGet( &ATSAMX_URB_Proc_Q,
                                                  0u,
-                                                &p_err);
+                                                &p_err, (void*) p_urb);
         if (p_err != USBH_ERR_NONE) {
 #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
             USBH_PRINT_LOG("DRV: Could not get URB from Queue.\r\n");

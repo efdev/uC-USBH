@@ -500,16 +500,16 @@ USBH_ERR USBH_OS_TaskCreate(CPU_CHAR *p_name, CPU_INT32U prio,
 *********************************************************************************************************
 */
 
-USBH_HQUEUE USBH_OS_MsgQueueCreate(void **p_start, CPU_INT16U size,
-				   USBH_ERR *p_err)
-{
-	(void)p_start;
-	(void)size;
+// USBH_HQUEUE USBH_OS_MsgQueueCreate(void **p_start, CPU_INT16U size,
+// 				   USBH_ERR *p_err)
+// {
+// 	(void)p_start;
+// 	(void)size;
 
-	*p_err = USBH_ERR_NONE;
+// 	*p_err = USBH_ERR_NONE;
 
-	return ((USBH_HQUEUE)0);
-}
+// 	return ((USBH_HQUEUE)0);
+// }
 
 /*
 *********************************************************************************************************
@@ -528,12 +528,16 @@ USBH_HQUEUE USBH_OS_MsgQueueCreate(void **p_start, CPU_INT16U size,
 *********************************************************************************************************
 */
 
-USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE msg_q, void *p_msg)
+USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE *msg_q, void *p_msg)
 {
-	(void)msg_q;
-	(void)p_msg;
+	int err = k_msgq_put(msg_q, p_msg, K_NO_WAIT);
+	if (err == 0) {
+		err = USBH_ERR_NONE;
+	} else {
+		err = USBH_ERR_OS_FAIL;
+	}
 
-	return (USBH_ERR_NONE);
+	return err;
 }
 
 /*
@@ -561,13 +565,17 @@ USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE msg_q, void *p_msg)
 *********************************************************************************************************
 */
 
-void *USBH_OS_MsgQueueGet(USBH_HQUEUE msg_q, CPU_INT32U timeout,
-			  USBH_ERR *p_err)
+void USBH_OS_MsgQueueGet(USBH_HQUEUE *msg_q, CPU_INT32U timeout,
+			 USBH_ERR *p_err, void *p_data)
 {
-	(void)msg_q;
-	(void)timeout;
+	int err = k_msgq_get(msg_q, p_data, K_MSEC(timeout));
+	if (err == 0) {
+		err = USBH_ERR_NONE;
+	} else if (err == EAGAIN) {
+		err = USBH_ERR_OS_TIMEOUT;
+	} else {
+		err = USBH_ERR_OS_FAIL;
+	}
 
-	*p_err = USBH_ERR_NONE;
-
-	return ((void *)0);
+	*p_err = err;
 }
