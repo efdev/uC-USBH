@@ -148,7 +148,6 @@ static  void  BSP_USBH_Template_Init (USBH_HC_DRV  *p_drv,
     /* $$$$ Enable host control registers and bus clock [mandatory]. */
     /* $$$$ Configure main USB host interrupt(s) in interrupt controller (e.g. registering BSP ISR) [mandatory]. */
     /* $$$$ Configure I/O pins [if necessary]. */
-
     *p_err = USBH_ERR_NONE;
 }
 

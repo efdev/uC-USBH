@@ -30,17 +30,17 @@
 *********************************************************************************************************
 */
 
-#define   USBH_CLASS_MODULE
-#define   MICRIUM_SOURCE
-#include  "usbh_class.h"
+#define USBH_CLASS_MODULE
+#define MICRIUM_SOURCE
+#include "usbh_class.h"
 
-
+#include <logging/log.h>
+LOG_MODULE_REGISTER(usbh_class);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -48,13 +48,11 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                          LOCAL DATA TYPES
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -62,13 +60,11 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                       LOCAL GLOBAL VARIABLES
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -76,23 +72,21 @@
 *********************************************************************************************************
 */
 
-static  USBH_ERR  USBH_ClassProbeDev(USBH_DEV     *p_dev);
+static USBH_ERR USBH_ClassProbeDev(USBH_DEV *p_dev);
 
-static  USBH_ERR  USBH_ClassProbeIF (USBH_DEV     *p_dev,
-                                     USBH_IF      *p_if);
+static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
+                                  USBH_IF *p_if);
 
-static  void      USBH_ClassNotify  (USBH_DEV     *p_dev,
-                                     USBH_IF      *p_if,
-                                     void         *p_class_dev,
-                                     CPU_BOOLEAN   is_conn);
-
+static void USBH_ClassNotify(USBH_DEV *p_dev,
+                             USBH_IF *p_if,
+                             void *p_class_dev,
+                             CPU_BOOLEAN is_conn);
 
 /*
 *********************************************************************************************************
 *                                     LOCAL CONFIGURATION ERRORS
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -122,42 +116,47 @@ static  void      USBH_ClassNotify  (USBH_DEV     *p_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_ClassDrvReg (USBH_CLASS_DRV          *p_class_drv,
-                            USBH_CLASS_NOTIFY_FNCT   class_notify_fnct,
-                            void                    *p_class_notify_ctx)
+USBH_ERR USBH_ClassDrvReg(USBH_CLASS_DRV *p_class_drv,
+                          USBH_CLASS_NOTIFY_FNCT class_notify_fnct,
+                          void *p_class_notify_ctx)
 {
-    CPU_INT32U  ix;
-    USBH_ERR    err;
+    CPU_INT32U ix;
+    USBH_ERR err;
     CPU_SR_ALLOC();
 
-
-    if (p_class_drv == (USBH_CLASS_DRV *)0) {
+    if (p_class_drv == (USBH_CLASS_DRV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
-    if (p_class_drv->NamePtr == (CPU_INT08U *)0) {
+    if (p_class_drv->NamePtr == (CPU_INT08U *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
     if ((p_class_drv->ProbeDev == 0) &&
-        (p_class_drv->ProbeIF  == 0)) {
-         return (USBH_ERR_INVALID_ARG);
+        (p_class_drv->ProbeIF == 0))
+    {
+        return (USBH_ERR_INVALID_ARG);
     }
 
     CPU_CRITICAL_ENTER();
-    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++) {     /* Find first empty element in the class drv list.      */
+    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++)
+    { /* Find first empty element in the class drv list.      */
 
-        if (USBH_ClassDrvList[ix].InUse == 0u) {                /* Insert class drv if it is empty location.            */
-            USBH_ClassDrvList[ix].ClassDrvPtr   = p_class_drv;
+        if (USBH_ClassDrvList[ix].InUse == 0u)
+        { /* Insert class drv if it is empty location.            */
+            USBH_ClassDrvList[ix].ClassDrvPtr = p_class_drv;
             USBH_ClassDrvList[ix].NotifyFnctPtr = class_notify_fnct;
-            USBH_ClassDrvList[ix].NotifyArgPtr  = p_class_notify_ctx;
-            USBH_ClassDrvList[ix].InUse         = 1u;
+            USBH_ClassDrvList[ix].NotifyArgPtr = p_class_notify_ctx;
+            USBH_ClassDrvList[ix].InUse = 1u;
             break;
         }
     }
     CPU_CRITICAL_EXIT();
 
-    if (ix >= USBH_CFG_MAX_NBR_CLASS_DRVS) {                    /* List is full.                                        */
+    if (ix >= USBH_CFG_MAX_NBR_CLASS_DRVS)
+    { /* List is full.                                        */
         return (USBH_ERR_CLASS_DRV_ALLOC);
     }
 
@@ -165,7 +164,6 @@ USBH_ERR  USBH_ClassDrvReg (USBH_CLASS_DRV          *p_class_drv,
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -183,38 +181,40 @@ USBH_ERR  USBH_ClassDrvReg (USBH_CLASS_DRV          *p_class_drv,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_ClassDrvUnreg (USBH_CLASS_DRV  *p_class_drv)
+USBH_ERR USBH_ClassDrvUnreg(USBH_CLASS_DRV *p_class_drv)
 {
-    CPU_INT32U  ix;
+    CPU_INT32U ix;
     CPU_SR_ALLOC();
 
-
-    if (p_class_drv == (USBH_CLASS_DRV *)0) {
+    if (p_class_drv == (USBH_CLASS_DRV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
     CPU_CRITICAL_ENTER();
-    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++) {     /* Find the element in the class driver list.           */
+    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++)
+    { /* Find the element in the class driver list.           */
 
-        if ((USBH_ClassDrvList[ix].InUse       !=          0u) &&
-            (USBH_ClassDrvList[ix].ClassDrvPtr == p_class_drv)) {
+        if ((USBH_ClassDrvList[ix].InUse != 0u) &&
+            (USBH_ClassDrvList[ix].ClassDrvPtr == p_class_drv))
+        {
 
-            USBH_ClassDrvList[ix].ClassDrvPtr   = (USBH_CLASS_DRV       *)0;
+            USBH_ClassDrvList[ix].ClassDrvPtr = (USBH_CLASS_DRV *)0;
             USBH_ClassDrvList[ix].NotifyFnctPtr = (USBH_CLASS_NOTIFY_FNCT)0;
-            USBH_ClassDrvList[ix].NotifyArgPtr  = (void                 *)0;
-            USBH_ClassDrvList[ix].InUse         = 0u;
+            USBH_ClassDrvList[ix].NotifyArgPtr = (void *)0;
+            USBH_ClassDrvList[ix].InUse = 0u;
             break;
         }
     }
     CPU_CRITICAL_EXIT();
 
-    if (ix >= USBH_CFG_MAX_NBR_CLASS_DRVS) {
+    if (ix >= USBH_CFG_MAX_NBR_CLASS_DRVS)
+    {
         return (USBH_ERR_CLASS_DRV_NOT_FOUND);
     }
 
     return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -230,48 +230,52 @@ USBH_ERR  USBH_ClassDrvUnreg (USBH_CLASS_DRV  *p_class_drv)
 *********************************************************************************************************
 */
 
-void  USBH_ClassSuspend (USBH_DEV  *p_dev)
+void USBH_ClassSuspend(USBH_DEV *p_dev)
 {
-    CPU_INT08U       if_ix;
-    CPU_INT08U       nbr_ifs;
-    USBH_CFG        *p_cfg;
-    USBH_IF         *p_if;
-    USBH_CLASS_DRV  *p_class_drv;
+    CPU_INT08U if_ix;
+    CPU_INT08U nbr_ifs;
+    USBH_CFG *p_cfg;
+    USBH_IF *p_if;
+    USBH_CLASS_DRV *p_class_drv;
 
-
-    if ((p_dev->ClassDevPtr    != (void               *)0) &&   /* If class drv is present at dev level.                */
-        (p_dev->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0)) {
+    if ((p_dev->ClassDevPtr != (void *)0) && /* If class drv is present at dev level.                */
+        (p_dev->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0))
+    {
         p_class_drv = p_dev->ClassDrvRegPtr->ClassDrvPtr;
-                                                                /* Chk if class drv is present at dev level.            */
-        if ((p_class_drv          != (USBH_CLASS_DRV *)0) &&
-            (p_class_drv->Suspend != (void           *)0)) {
+        /* Chk if class drv is present at dev level.            */
+        if ((p_class_drv != (USBH_CLASS_DRV *)0) &&
+            (p_class_drv->Suspend != (void *)0))
+        {
             p_class_drv->Suspend(p_dev->ClassDevPtr);
             return;
         }
     }
 
-    p_cfg   = USBH_CfgGet(p_dev, 0u);                           /* Get first cfg.                                       */
+    p_cfg = USBH_CfgGet(p_dev, 0u); /* Get first cfg.                                       */
     nbr_ifs = USBH_CfgIF_NbrGet(p_cfg);
 
-    for (if_ix = 0u; if_ix < nbr_ifs; if_ix++) {
+    for (if_ix = 0u; if_ix < nbr_ifs; if_ix++)
+    {
         p_if = USBH_IF_Get(p_cfg, if_ix);
-        if (p_if == (USBH_IF *)0) {
+        if (p_if == (USBH_IF *)0)
+        {
             return;
         }
 
-        if ((p_if->ClassDevPtr    != (void               *)0) &&
-            (p_if->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0)) {
+        if ((p_if->ClassDevPtr != (void *)0) &&
+            (p_if->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0))
+        {
             p_class_drv = p_if->ClassDrvRegPtr->ClassDrvPtr;
 
-            if ((p_class_drv          != (USBH_CLASS_DRV *)0) &&
-                (p_class_drv->Suspend != (void           *)0)) {
+            if ((p_class_drv != (USBH_CLASS_DRV *)0) &&
+                (p_class_drv->Suspend != (void *)0))
+            {
                 p_class_drv->Suspend(p_if->ClassDevPtr);
                 return;
             }
         }
     }
 }
-
 
 /*
 *********************************************************************************************************
@@ -287,48 +291,52 @@ void  USBH_ClassSuspend (USBH_DEV  *p_dev)
 *********************************************************************************************************
 */
 
-void  USBH_ClassResume (USBH_DEV  *p_dev)
+void USBH_ClassResume(USBH_DEV *p_dev)
 {
-    CPU_INT08U       if_ix;
-    CPU_INT08U       nbr_ifs;
-    USBH_CFG        *p_cfg;
-    USBH_IF         *p_if;
-    USBH_CLASS_DRV  *p_class_drv;
+    CPU_INT08U if_ix;
+    CPU_INT08U nbr_ifs;
+    USBH_CFG *p_cfg;
+    USBH_IF *p_if;
+    USBH_CLASS_DRV *p_class_drv;
 
-
-    if ((p_dev->ClassDevPtr    != (void               *)0) &&   /* If class drv is present at dev level.                */
-        (p_dev->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0)) {
+    if ((p_dev->ClassDevPtr != (void *)0) && /* If class drv is present at dev level.                */
+        (p_dev->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0))
+    {
         p_class_drv = p_dev->ClassDrvRegPtr->ClassDrvPtr;
-                                                                /* Chk if class drv is present at dev level.            */
-        if ((p_class_drv         != (USBH_CLASS_DRV *)0) &&
-            (p_class_drv->Resume != (void           *)0)) {
+        /* Chk if class drv is present at dev level.            */
+        if ((p_class_drv != (USBH_CLASS_DRV *)0) &&
+            (p_class_drv->Resume != (void *)0))
+        {
             p_class_drv->Resume(p_dev->ClassDevPtr);
             return;
         }
     }
 
-    p_cfg   = USBH_CfgGet(p_dev, 0u);                           /* Get 1st cfg.                                         */
+    p_cfg = USBH_CfgGet(p_dev, 0u); /* Get 1st cfg.                                         */
     nbr_ifs = USBH_CfgIF_NbrGet(p_cfg);
 
-    for (if_ix = 0u; if_ix < nbr_ifs; if_ix++) {
+    for (if_ix = 0u; if_ix < nbr_ifs; if_ix++)
+    {
         p_if = USBH_IF_Get(p_cfg, if_ix);
-        if (p_if == (USBH_IF *)0) {
+        if (p_if == (USBH_IF *)0)
+        {
             return;
         }
 
-        if ((p_if->ClassDevPtr    != (void               *)0) &&
-            (p_if->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0)) {
+        if ((p_if->ClassDevPtr != (void *)0) &&
+            (p_if->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0))
+        {
             p_class_drv = p_if->ClassDrvRegPtr->ClassDrvPtr;
 
-            if ((p_class_drv         != (USBH_CLASS_DRV *)0) &&
-                (p_class_drv->Resume != (void           *)0)) {
+            if ((p_class_drv != (USBH_CLASS_DRV *)0) &&
+                (p_class_drv->Resume != (void *)0))
+            {
                 p_class_drv->Resume(p_if->ClassDevPtr);
                 return;
             }
         }
     }
 }
-
 
 /*
 *********************************************************************************************************
@@ -359,75 +367,103 @@ void  USBH_ClassResume (USBH_DEV  *p_dev)
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_ClassDrvConn (USBH_DEV  *p_dev)
+USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 {
+    LOG_ERR("ClassDrvConn begin");
+    CPU_INT08U if_ix;
+    CPU_INT08U nbr_if;
+    CPU_BOOLEAN drv_found;
+    USBH_ERR err;
+    USBH_CFG *p_cfg;
+    USBH_IF *p_if;
 
-    CPU_INT08U    if_ix;
-    CPU_INT08U    nbr_if;
-    CPU_BOOLEAN   drv_found;
-    USBH_ERR      err;
-    USBH_CFG     *p_cfg;
-    USBH_IF      *p_if;
-
-
+    LOG_ERR("ClassDrvConn 1");
     err = USBH_ClassProbeDev(p_dev);
-    if (err == USBH_ERR_NONE) {
+    if (err == USBH_ERR_NONE)
+    {
         p_if = (USBH_IF *)0;
-        USBH_ClassNotify(p_dev,                                 /* Find a class drv matching dev desc.                  */
+        LOG_ERR("ClassDrvConn 2");
+
+        USBH_ClassNotify(p_dev, /* Find a class drv matching dev desc.                  */
                          p_if,
                          p_dev->ClassDevPtr,
                          USBH_CLASS_DEV_STATE_CONN);
         return (USBH_ERR_NONE);
-    } else if ((err != USBH_ERR_CLASS_DRV_NOT_FOUND) &&
-               (err != USBH_ERR_CLASS_PROBE_FAIL)) {
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        USBH_PRINT_LOG("ERROR: Probe class driver. #%d\r\n", err);
-#endif
-    } else {
-                                                                /* Empty Else Statement                                 */        
     }
+    else if ((err != USBH_ERR_CLASS_DRV_NOT_FOUND) &&
+             (err != USBH_ERR_CLASS_PROBE_FAIL))
+    {
 
-    err = USBH_CfgSet(p_dev, 1u);                               /* Select first cfg.                                    */
-    if (err != USBH_ERR_NONE) {
+        // #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
+        //         USBH_PRINT_LOG("ERROR: Probe class driver. #%d\r\n", err);
+        // #endif
+    }
+    else
+    {
+        /* Empty Else Statement                                 */
+    }
+    LOG_ERR("ClassDrvConn 3");
+
+    err = USBH_CfgSet(p_dev, 1u); /* Select first cfg.                                    */
+    if (err != USBH_ERR_NONE)
+    {
         return (err);
     }
 
     drv_found = DEF_FALSE;
-    p_cfg     = USBH_CfgGet(p_dev, (p_dev->SelCfg - 1));        /* Get active cfg struct.                               */
-    nbr_if    = USBH_CfgIF_NbrGet(p_cfg);
+    LOG_ERR("ClassDrvConn 4");
+    p_cfg = USBH_CfgGet(p_dev, (p_dev->SelCfg - 1)); /* Get active cfg struct.                               */
+    LOG_ERR("ClassDrvConn 5");
+    nbr_if = USBH_CfgIF_NbrGet(p_cfg);
 
-    for (if_ix = 0u; if_ix < nbr_if; if_ix++) {                 /* For all IFs present in cfg.                          */
+    for (if_ix = 0u; if_ix < nbr_if; if_ix++)
+    { /* For all IFs present in cfg.                          */
+        LOG_ERR("ClassDrvConn 6");
         p_if = USBH_IF_Get(p_cfg, if_ix);
-        if (p_if == (USBH_IF *)0) {
-            return(USBH_ERR_NULL_PTR);
+        if (p_if == (USBH_IF *)0)
+        {
+            return (USBH_ERR_NULL_PTR);
         }
-
-        err  = USBH_ClassProbeIF(p_dev, p_if);                  /* Find class driver matching IF.                       */
-
-        if (err == USBH_ERR_NONE) {
+        LOG_ERR("ClassDrvConn 7");
+        err = USBH_ClassProbeIF(p_dev, p_if); /* Find class driver matching IF.                       */
+        LOG_ERR("ClassDrvConn after 7");
+        if (err == USBH_ERR_NONE)
+        {
             drv_found = DEF_TRUE;
-        } else if (err != USBH_ERR_CLASS_DRV_NOT_FOUND) {
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-            USBH_PRINT_LOG("ERROR: Probe class driver. #%d\r\n", err);
-#endif
-        } else {
-                                                                /* Empty Else Statement                                 */            
+        }
+        else if (err != USBH_ERR_CLASS_DRV_NOT_FOUND)
+        {
+            // #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
+            //             USBH_PRINT_LOG("ERROR: Probe class driver. #%d\r\n", err);
+            // #endif
+        }
+        else
+        {
+            /* Empty Else Statement                                 */
         }
     }
-    if (drv_found == DEF_FALSE) {
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        USBH_PRINT_LOG("No Class Driver Found.\r\n");
-#endif
+    if (drv_found == DEF_FALSE)
+    {
+        // #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
+        //         USBH_PRINT_LOG("No Class Driver Found.\r\n");
+        // #endif
         return (err);
     }
 
-    for (if_ix = 0u; if_ix < nbr_if; if_ix++) {                 /* For all IFs present in this cfg, notify app.         */
+    for (if_ix = 0u; if_ix < nbr_if; if_ix++)
+    { /* For all IFs present in this cfg, notify app.         */
+        LOG_ERR("ClassDrvConn 8");
+
         p_if = USBH_IF_Get(p_cfg, if_ix);
-        if (p_if == (USBH_IF *)0) {
-            return(USBH_ERR_NULL_PTR);
+        if (p_if == (USBH_IF *)0)
+        {
+            return (USBH_ERR_NULL_PTR);
         }
 
-        if (p_if->ClassDevPtr != 0) {
+        if (p_if->ClassDevPtr != 0)
+        {
+            LOG_ERR("ClassDrvConn 9");
+
             USBH_ClassNotify(p_dev,
                              p_if,
                              p_if->ClassDevPtr,
@@ -437,7 +473,6 @@ USBH_ERR  USBH_ClassDrvConn (USBH_DEV  *p_dev)
 
     return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -453,21 +488,22 @@ USBH_ERR  USBH_ClassDrvConn (USBH_DEV  *p_dev)
 *********************************************************************************************************
 */
 
-void  USBH_ClassDrvDisconn (USBH_DEV  *p_dev)
+void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
 {
-    CPU_INT08U       if_ix;
-    CPU_INT08U       nbr_ifs;
-    USBH_CFG        *p_cfg;
-    USBH_IF         *p_if        = (USBH_IF *)0;
-    USBH_CLASS_DRV  *p_class_drv;
+    CPU_INT08U if_ix;
+    CPU_INT08U nbr_ifs;
+    USBH_CFG *p_cfg;
+    USBH_IF *p_if = (USBH_IF *)0;
+    USBH_CLASS_DRV *p_class_drv;
 
-
-    if ((p_dev->ClassDevPtr    != (void               *)0) &&   /* If class drv is present at dev level.                */
-        (p_dev->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0)) {
+    if ((p_dev->ClassDevPtr != (void *)0) && /* If class drv is present at dev level.                */
+        (p_dev->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0))
+    {
         p_class_drv = p_dev->ClassDrvRegPtr->ClassDrvPtr;
 
-        if ((p_class_drv          != DEF_NULL) &&
-            (p_class_drv->Disconn != DEF_NULL)) {
+        if ((p_class_drv != DEF_NULL) &&
+            (p_class_drv->Disconn != DEF_NULL))
+        {
             USBH_ClassNotify(p_dev,
                              p_if,
                              p_dev->ClassDevPtr,
@@ -477,39 +513,42 @@ void  USBH_ClassDrvDisconn (USBH_DEV  *p_dev)
         }
 
         p_dev->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
-        p_dev->ClassDevPtr    = (void               *)0;
+        p_dev->ClassDevPtr = (void *)0;
         return;
     }
 
-    p_cfg   = USBH_CfgGet(p_dev, 0u);                           /* Get first cfg.                                       */
+    p_cfg = USBH_CfgGet(p_dev, 0u); /* Get first cfg.                                       */
     nbr_ifs = USBH_CfgIF_NbrGet(p_cfg);
-    for (if_ix = 0u; if_ix < nbr_ifs; if_ix++) {                /* For all IFs present in first cfg.                    */
+    for (if_ix = 0u; if_ix < nbr_ifs; if_ix++)
+    { /* For all IFs present in first cfg.                    */
         p_if = USBH_IF_Get(p_cfg, if_ix);
-        if (p_if == (USBH_IF *)0) {
+        if (p_if == (USBH_IF *)0)
+        {
             return;
         }
 
-        if ((p_if->ClassDevPtr    != (void               *)0) &&
-            (p_if->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0)) {
+        if ((p_if->ClassDevPtr != (void *)0) &&
+            (p_if->ClassDrvRegPtr != (USBH_CLASS_DRV_REG *)0))
+        {
             p_class_drv = p_if->ClassDrvRegPtr->ClassDrvPtr;
 
-            if ((p_class_drv          != DEF_NULL) &&
-                (p_class_drv->Disconn != DEF_NULL)) {
+            if ((p_class_drv != DEF_NULL) &&
+                (p_class_drv->Disconn != DEF_NULL))
+            {
                 USBH_ClassNotify(p_dev,
                                  p_if,
                                  p_if->ClassDevPtr,
                                  USBH_CLASS_DEV_STATE_DISCONN);
 
-                                                                /* Disconnect the class driver.                         */
+                /* Disconnect the class driver.                         */
                 p_class_drv->Disconn((void *)p_if->ClassDevPtr);
             }
 
             p_if->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
-            p_if->ClassDevPtr    = (void               *)0;
+            p_if->ClassDevPtr = (void *)0;
         }
     }
 }
-
 
 /*
 *********************************************************************************************************
@@ -534,28 +573,31 @@ void  USBH_ClassDrvDisconn (USBH_DEV  *p_dev)
 *********************************************************************************************************
 */
 
-static  USBH_ERR  USBH_ClassProbeDev (USBH_DEV  *p_dev)
+static USBH_ERR USBH_ClassProbeDev(USBH_DEV *p_dev)
 {
-    CPU_INT32U       ix;
-    USBH_CLASS_DRV  *p_class_drv;
-    USBH_ERR         err;
-    void            *p_class_dev;
-
+    CPU_INT32U ix;
+    USBH_CLASS_DRV *p_class_drv;
+    USBH_ERR err;
+    void *p_class_dev;
 
     err = USBH_ERR_CLASS_DRV_NOT_FOUND;
 
-    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++) {     /* For each class drv present in list.                  */
+    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++)
+    { /* For each class drv present in list.                  */
 
-        if (USBH_ClassDrvList[ix].InUse != 0) {
+        if (USBH_ClassDrvList[ix].InUse != 0)
+        {
             p_class_drv = USBH_ClassDrvList[ix].ClassDrvPtr;
 
-            if (p_class_drv->ProbeDev != (void *)0) {
+            if (p_class_drv->ProbeDev != (void *)0)
+            {
                 p_dev->ClassDrvRegPtr = &USBH_ClassDrvList[ix];
-                p_class_dev           =  p_class_drv->ProbeDev(p_dev, &err);
+                p_class_dev = p_class_drv->ProbeDev(p_dev, &err);
 
-                if (err == USBH_ERR_NONE) {
-                    p_dev->ClassDevPtr = p_class_dev;           /* Drv found, store class dev ptr.                      */
-                    return(err);
+                if (err == USBH_ERR_NONE)
+                {
+                    p_dev->ClassDevPtr = p_class_dev; /* Drv found, store class dev ptr.                      */
+                    return (err);
                 }
                 p_dev->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
             }
@@ -564,7 +606,6 @@ static  USBH_ERR  USBH_ClassProbeDev (USBH_DEV  *p_dev)
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -583,39 +624,48 @@ static  USBH_ERR  USBH_ClassProbeDev (USBH_DEV  *p_dev)
 *********************************************************************************************************
 */
 
-static  USBH_ERR  USBH_ClassProbeIF (USBH_DEV *p_dev,
-                                     USBH_IF  *p_if)
+static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
+                                  USBH_IF *p_if)
 {
-    CPU_INT32U       ix;
-    USBH_CLASS_DRV  *p_class_drv;
-    void            *p_class_dev;
-    USBH_ERR         err;
-
+    LOG_ERR("ClassProbeIF");
+    CPU_INT32U ix;
+    USBH_CLASS_DRV *p_class_drv;
+    void *p_class_dev;
+    USBH_ERR err;
 
     err = USBH_ERR_CLASS_DRV_NOT_FOUND;
-
-    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++) {     /* Search drv list for matching IF class.               */
-
-        if (USBH_ClassDrvList[ix].InUse != 0u) {
+    LOG_ERR("Probe 1");
+    for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++)
+    { /* Search drv list for matching IF class.               */
+        LOG_ERR("Probe 2");
+        if (USBH_ClassDrvList[ix].InUse != 0u)
+        {
+            LOG_ERR("Probe 3");
             p_class_drv = USBH_ClassDrvList[ix].ClassDrvPtr;
 
-            if (p_class_drv->ProbeIF != (void *)0) {
+            if (p_class_drv->ProbeIF != (void *)0)
+            {
+                LOG_ERR("Probe 4");
                 p_if->ClassDrvRegPtr = &USBH_ClassDrvList[ix];
-                p_class_dev          =  p_class_drv->ProbeIF(p_dev, p_if, &err);
+                LOG_ERR("Probe 5");
+                p_class_dev = p_class_drv->ProbeIF(p_dev, p_if, &err);
+                LOG_ERR("Probe 7");
 
-                if (err == USBH_ERR_NONE) {
-                    p_if->ClassDevPtr = p_class_dev;            /* Drv found, store class dev ptr.                      */
+                if (err == USBH_ERR_NONE)
+                {
+                    LOG_ERR("Probe 8");
+                    p_if->ClassDevPtr = p_class_dev; /* Drv found, store class dev ptr.                      */
                     return (err);
                 }
-
+                LOG_ERR("Probe 9");
                 p_if->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
             }
         }
     }
+    LOG_ERR("Probe 6");
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -637,22 +687,23 @@ static  USBH_ERR  USBH_ClassProbeIF (USBH_DEV *p_dev,
 *********************************************************************************************************
 */
 
-static  void  USBH_ClassNotify (USBH_DEV     *p_dev,
-                                USBH_IF      *p_if,
-                                void         *p_class_dev,
-                                CPU_BOOLEAN   is_conn)
+static void USBH_ClassNotify(USBH_DEV *p_dev,
+                             USBH_IF *p_if,
+                             void *p_class_dev,
+                             CPU_BOOLEAN is_conn)
 {
-    USBH_CLASS_DRV_REG  *p_class_drv_reg;
-
+    USBH_CLASS_DRV_REG *p_class_drv_reg;
 
     p_class_drv_reg = p_dev->ClassDrvRegPtr;
 
-    if (p_class_drv_reg == (USBH_CLASS_DRV_REG *)0) {
+    if (p_class_drv_reg == (USBH_CLASS_DRV_REG *)0)
+    {
         p_class_drv_reg = p_if->ClassDrvRegPtr;
     }
 
-    if (p_class_drv_reg->NotifyFnctPtr != (USBH_CLASS_NOTIFY_FNCT)0) {
-        p_class_drv_reg->NotifyFnctPtr(p_class_dev,             /* Call app notification callback fnct.                 */
+    if (p_class_drv_reg->NotifyFnctPtr != (USBH_CLASS_NOTIFY_FNCT)0)
+    {
+        p_class_drv_reg->NotifyFnctPtr(p_class_dev, /* Call app notification callback fnct.                 */
                                        is_conn,
                                        p_class_drv_reg->NotifyArgPtr);
     }

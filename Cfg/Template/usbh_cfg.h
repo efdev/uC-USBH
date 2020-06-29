@@ -160,7 +160,7 @@
                                                                 /*  ... (MSC, HID, etc) you will use and add to the ... */
                                                                 /*  ... core. The hub class is mandatory and must be ...*/
                                                                 /*  ... accounted in the total number.                  */
-#define  USBH_CFG_MAX_NBR_CLASS_DRVS                       4u
+#define  USBH_CFG_MAX_NBR_CLASS_DRVS                       1u
 
                                                                 /*  Maximum number of devices                           */
                                                                 /*  The maximum number of devices that the USB host ... */
@@ -353,7 +353,7 @@
 #define  USBH_CFG_PRINT_FNAME                    DEF_DISABLED
 
 #include <stdio.h>
-#define  USBH_PRINTF                             printf
+#define  USBH_PRINTF                             LOG_ERR
 
 #if  (USBH_CFG_PRINT_LOG == DEF_ENABLED)
 #define  USBH_PRINT_LOG(...)         USBH_PRINTF(__VA_ARGS__)

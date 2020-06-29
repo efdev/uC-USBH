@@ -37,6 +37,8 @@
 #include  "usbh_hcd_atsamx.h"
 #include  "usbh_hub.h"
 
+#include <logging/log.h>
+LOG_MODULE_REGISTER(hcd);
 
 /*
 *********************************************************************************************************
@@ -533,6 +535,7 @@ static  void  USBH_ATSAMX_HCD_Init (USBH_HC_DRV  *p_hc_drv,
                                                 &octets_reqd,
                                                 &err_lib);
     if (err_lib != LIB_MEM_ERR_NONE) {
+        printk("mem error %d \n", err_lib);
        *p_err = USBH_ERR_ALLOC;
         return;
     }
@@ -555,6 +558,7 @@ static  void  USBH_ATSAMX_HCD_Init (USBH_HC_DRV  *p_hc_drv,
                    &octets_reqd,
                    &err_lib);
     if (err_lib != LIB_MEM_ERR_NONE) {
+        printk("hcd 560 %d\n", err_lib);
        *p_err = USBH_ERR_ALLOC;
         return;
     }
@@ -583,6 +587,8 @@ static  void  USBH_ATSAMX_HCD_Init (USBH_HC_DRV  *p_hc_drv,
 				K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
 				USBH_ATSAMX_URB_ProcTask, (void*) p_hc_drv, NULL, NULL,
 				ATSAMX_URB_PROC_TASK_PRIO, 0, K_NO_WAIT);
+    
+    LOG_INF("HCD Init done.");
 
    *p_err = USBH_ERR_NONE;
 }
@@ -609,6 +615,8 @@ static  void  USBH_ATSAMX_HCD_Init (USBH_HC_DRV  *p_hc_drv,
 static  void  USBH_ATSAMX_HCD_Start (USBH_HC_DRV  *p_hc_drv,
                                      USBH_ERR     *p_err)
 {
+    LOG_ERR("HCD Start begin.");
+
     USBH_ATSAMX_REG  *p_reg;
     USBH_HC_BSP_API  *p_bsp_api;
     USBH_DRV_DATA    *p_drv_data;
@@ -627,12 +635,14 @@ static  void  USBH_ATSAMX_HCD_Start (USBH_HC_DRV  *p_hc_drv,
     if (p_bsp_api->Init != (void *)0) {
         p_bsp_api->Init(p_hc_drv, p_err);
         if (*p_err != USBH_ERR_NONE) {
+            LOG_ERR("bsp init error %i", p_err);
             return;
         }
-    }
+    }    
 
     if (!(p_reg->SYNCBUSY & USBH_ATSAMX_SYNCBUSY_SWRST)) {      /* Check if synchronization is completed                */
         USBH_ATSAMX_CTRLA_READ(p_reg, reg_val);
+
         if (reg_val & USBH_ATSAMX_CTRLA_ENABLE) {
             reg_val &= ~USBH_ATSAMX_CTRLA_ENABLE;
             USBH_ATSAMX_CTRLA_WRITE(p_reg, reg_val);            /* Disable USB peripheral                               */
@@ -675,6 +685,7 @@ static  void  USBH_ATSAMX_HCD_Start (USBH_HC_DRV  *p_hc_drv,
     if (p_bsp_api->ISR_Reg != (void *)0) {
         p_bsp_api->ISR_Reg(USBH_ATSAMX_ISR_Handler, p_err);
         if (*p_err != USBH_ERR_NONE) {
+            LOG_ERR("HCD Start");
             return;
         }
     }
@@ -697,7 +708,7 @@ static  void  USBH_ATSAMX_HCD_Start (USBH_HC_DRV  *p_hc_drv,
     p_reg->INTENSET = (USBH_ATSAMX_INT_DCONN |                  /* Enable interrupts to detect connection               */
                        USBH_ATSAMX_INT_RST   |
                        USBH_ATSAMX_INT_WAKEUP);
-
+    LOG_ERR("HCD done.");
    *p_err = USBH_ERR_NONE;
 }
 
