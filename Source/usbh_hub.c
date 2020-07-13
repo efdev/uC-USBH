@@ -36,7 +36,8 @@
 #include  "usbh_core.h"
 #include  "usbh_class.h"
 
-
+#include <logging/log.h>
+LOG_MODULE_REGISTER(hub);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
@@ -1334,12 +1335,13 @@ static  USBH_ERR  USBH_HUB_PortsInit (USBH_HUB_DEV  *p_hub_dev)
         err = USBH_HUB_PortPwrSet(p_hub_dev, i + 1u);           /* Set port pwr.                                      */
 
         if (err != USBH_ERR_NONE) {
+            LOG_ERR("PortPwrSet error");
             USBH_PRINT_ERR(err);
             return (err);
         }
         USBH_OS_DlyMS(p_hub_dev->Desc.bPwrOn2PwrGood * 2u);     /* See Note (1).                                       */
     }
-
+    LOG_INF("PortsInit done");
     return (USBH_ERR_NONE);
 }
 
@@ -1431,7 +1433,7 @@ static  USBH_ERR  USBH_HUB_PortResetSet (USBH_HUB_DEV  *p_hub_dev,
                                          CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortResetSet");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note (1).                                        */
                               USBH_REQ_SET_FEATURE,
@@ -1479,7 +1481,7 @@ static  USBH_ERR  USBH_HUB_PortRstChngClr (USBH_HUB_DEV  *p_hub_dev,
                                            CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortRstChngClr");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note (1).                                        */
                               USBH_REQ_CLR_FEATURE,
@@ -1527,7 +1529,7 @@ static  USBH_ERR  USBH_HUB_PortEnChngClr (USBH_HUB_DEV  *p_hub_dev,
                                           CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortEnChngClr");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,            /* See Note (1).                                        */
                               USBH_REQ_CLR_FEATURE,
@@ -1575,7 +1577,7 @@ static  USBH_ERR  USBH_HUB_PortConnChngClr (USBH_HUB_DEV  *p_hub_dev,
                                             CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortConnChngClr");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note #1.                                         */
                               USBH_REQ_CLR_FEATURE,
@@ -1623,7 +1625,7 @@ static  USBH_ERR  USBH_HUB_PortPwrSet (USBH_HUB_DEV  *p_hub_dev,
                                        CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortPwrSet");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note #1.                                         */
                               USBH_REQ_SET_FEATURE,
@@ -1634,6 +1636,7 @@ static  USBH_ERR  USBH_HUB_PortPwrSet (USBH_HUB_DEV  *p_hub_dev,
                               0u,
                               USBH_HUB_TIMEOUT,
                              &err);
+    LOG_INF("CtrlTx ret %d", err);
     if (err != USBH_ERR_NONE) {
         USBH_EP_Reset(p_hub_dev->DevPtr, (USBH_EP *)0);
     }
@@ -1671,7 +1674,7 @@ static  USBH_ERR  USBH_HUB_PortSuspendClr (USBH_HUB_DEV  *p_hub_dev,
                                            CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortSuspendClr");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note #1.                                         */
                               USBH_REQ_CLR_FEATURE,
@@ -1719,7 +1722,7 @@ static  USBH_ERR  USBH_HUB_PortEnClr (USBH_HUB_DEV  *p_hub_dev,
                                       CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortEnClr");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note #1.                                         */
                               USBH_REQ_CLR_FEATURE,
@@ -1767,7 +1770,7 @@ static  USBH_ERR  USBH_HUB_PortEnSet (USBH_HUB_DEV  *p_hub_dev,
                                       CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortEnSet");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note #1.                                         */
                               USBH_REQ_SET_FEATURE,
@@ -1815,7 +1818,7 @@ USBH_ERR  USBH_HUB_PortSuspendSet (USBH_HUB_DEV  *p_hub_dev,
                                    CPU_INT16U     port_nbr)
 {
     USBH_ERR  err;
-
+    LOG_INF("PortSuspend");
 
     (void)USBH_CtrlTx(        p_hub_dev->DevPtr,                /* See Note #1.                                         */
                               USBH_REQ_SET_FEATURE,
@@ -2315,6 +2318,9 @@ void  USBH_HUB_ParseHubDesc (USBH_HUB_DESC  *p_hub_desc,
 void  USBH_HUB_FmtHubDesc (USBH_HUB_DESC  *p_hub_desc,
                            void           *p_buf_dest)
 {
+    static uint8_t temp;
+    temp++;
+    LOG_INF("FmtHubDesc %d", temp);
     USBH_HUB_DESC  *p_buf_dest_desc;
     CPU_INT08U      i;
 
@@ -2329,7 +2335,11 @@ void  USBH_HUB_FmtHubDesc (USBH_HUB_DESC  *p_hub_desc,
     p_buf_dest_desc->bHubContrCurrent    = p_hub_desc->bHubContrCurrent;
     p_buf_dest_desc->DeviceRemovable     = p_hub_desc->DeviceRemovable;
 
-    for (i = 0u; i < USBH_CFG_MAX_HUB_PORTS; i++) {
-        //p_buf_dest_desc->PortPwrCtrlMask[i] = p_hub_desc->PortPwrCtrlMask[i];
-    }
+    memcpy(&p_buf_dest_desc->bPwrOn2PwrGood, &p_hub_desc->bPwrOn2PwrGood, sizeof(uint8_t));
+
+    memcpy(&p_buf_dest_desc->PortPwrCtrlMask[0], &p_hub_desc->PortPwrCtrlMask[0], (sizeof(uint32_t)*USBH_CFG_MAX_HUB_PORTS));
+    // for (i = 0u; i < USBH_CFG_MAX_HUB_PORTS; i++) {
+    //    // p_buf_dest_desc->PortPwrCtrlMask[i] = p_hub_desc->PortPwrCtrlMask[i];
+    // }
+    LOG_INF("HubDesc done");
 }

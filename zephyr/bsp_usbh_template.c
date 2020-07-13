@@ -32,17 +32,20 @@
 **************************************************************************************************************
 */
 
-#include  <cpu.h>
-#include  <lib_def.h>
-#include  <usbh_cfg.h>
-#include  "bsp_usbh_template.h"
+#include "bsp_usbh_template.h"
+#include <cpu.h>
+#include <lib_def.h>
 
+#include <soc.h>
+#include <drivers/pinmux.h>
+
+#include <usbh_cfg.h>
 /*
 **************************************************************************************************************
 *                                            LOCAL DEFINES
 **************************************************************************************************************
 */
-
+#define CKGR_UCKR_UPLLEN (0x1u << 16) /**< \brief (CKGR_UCKR) UTMI PLL Enable */
 
 /*
 **************************************************************************************************************
@@ -50,13 +53,11 @@
 **************************************************************************************************************
 */
 
-
 /*
 **************************************************************************************************************
 *                                          LOCAL DATA TYPES
 **************************************************************************************************************
 */
-
 
 /*
 **************************************************************************************************************
@@ -64,17 +65,15 @@
 **************************************************************************************************************
 */
 
-
 /*
 **************************************************************************************************************
 *                                       LOCAL GLOBAL VARIABLES
 **************************************************************************************************************
 */
 
-static  USBH_HC_DRV   *USBH_HC_Template_DrvPtr;
+static USBH_HC_DRV *USBH_HC_Template_DrvPtr;
 
-static  CPU_FNCT_PTR   BSP_USBH_Template_ISR_Ptr;
-
+static CPU_FNCT_PTR BSP_USBH_Template_ISR_Ptr;
 
 /*
 **************************************************************************************************************
@@ -82,16 +81,14 @@ static  CPU_FNCT_PTR   BSP_USBH_Template_ISR_Ptr;
 **************************************************************************************************************
 */
 
-static  void  BSP_USBH_Template_Init          (USBH_HC_DRV   *p_drv,
-                                               USBH_ERR      *p_err);
+static void BSP_USBH_Template_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err);
 
-static  void  BSP_USBH_Template_ISR_Register  (CPU_FNCT_PTR   isr_fnct,
-                                               USBH_ERR      *p_err);
+static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
+										   USBH_ERR *p_err);
 
-static  void  BSP_USBH_Template_ISR_Unregister(USBH_ERR      *p_err);
+static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err);
 
-static  void  BSP_USBH_Template_IntHandler    (void);
-
+static void BSP_USBH_Template_IntHandler(void);
 
 /*
 *********************************************************************************************************
@@ -99,19 +96,15 @@ static  void  BSP_USBH_Template_IntHandler    (void);
 *********************************************************************************************************
 */
 
-USBH_HC_BSP_API  USBH_DrvBSP_Template = {
-    BSP_USBH_Template_Init,
-    BSP_USBH_Template_ISR_Register,
-    BSP_USBH_Template_ISR_Unregister
-};
-
+USBH_HC_BSP_API USBH_DrvBSP_Template = {BSP_USBH_Template_Init,
+										BSP_USBH_Template_ISR_Register,
+										BSP_USBH_Template_ISR_Unregister};
 
 /*
 **************************************************************************************************************
 *                                     LOCAL CONFIGURATION ERRORS
 **************************************************************************************************************
 */
-
 
 /*
 **************************************************************************************************************
@@ -138,19 +131,34 @@ USBH_HC_BSP_API  USBH_DrvBSP_Template = {
 * Note(s)     : none.
 *********************************************************************************************************
 */
-
-static  void  BSP_USBH_Template_Init (USBH_HC_DRV  *p_drv,
-                                      USBH_ERR     *p_err)
+static void BSP_USBH_Template_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err)
 {
-    USBH_HC_Template_DrvPtr = p_drv;
-    /* $$$$ This function performs all operations that the host controller cannot do. Typical operations are: */
+	USBH_HC_Template_DrvPtr = p_drv;
 
-    /* $$$$ Enable host control registers and bus clock [mandatory]. */
-    /* $$$$ Configure main USB host interrupt(s) in interrupt controller (e.g. registering BSP ISR) [mandatory]. */
-    /* $$$$ Configure I/O pins [if necessary]. */
-    *p_err = USBH_ERR_NONE;
+
+	/* Enable the clock in PM */
+	PM->AHBMASK.bit.USB_ = 1;
+	PM->APBBMASK.bit.USB_ = 1;
+
+	/* Enable the GCLK */
+	GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_USB | GCLK_CLKCTRL_GEN_GCLK0 |
+						GCLK_CLKCTRL_CLKEN;
+
+	while (GCLK->STATUS.bit.SYNCBUSY)
+	{
+	}
+	struct device *muxa = device_get_binding(DT_LABEL(DT_NODELABEL(pinmux_a)));
+	pinmux_pin_set(muxa, 25, PINMUX_FUNC_G);
+	pinmux_pin_set(muxa, 24, PINMUX_FUNC_G);
+	pinmux_pin_set(muxa, 23, PINMUX_FUNC_G);
+
+	/* $$$$ This function performs all operations that the host controller cannot do. Typical operations are: */
+
+	/* $$$$ Enable host control registers and bus clock [mandatory]. */
+	/* $$$$ Configure main USB host interrupt(s) in interrupt controller (e.g. registering BSP ISR) [mandatory]. */
+	/* $$$$ Configure I/O pins [if necessary]. */
+	*p_err = USBH_ERR_NONE;
 }
-
 
 /*
 *********************************************************************************************************
@@ -170,14 +178,19 @@ static  void  BSP_USBH_Template_Init (USBH_HC_DRV  *p_drv,
 *********************************************************************************************************
 */
 
-static  void  BSP_USBH_Template_ISR_Register (CPU_FNCT_PTR   isr_fnct,
-                                              USBH_ERR      *p_err)
+static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
+										   USBH_ERR *p_err)
 {
-    BSP_USBH_Template_ISR_Ptr = isr_fnct;
+	// do
+	// {
+	// 	IRQ_CONNECT(DT_INST_IRQ_BY_IDX(0, 0, irq),
+	// 				DT_INST_IRQ_BY_IDX(0, 0, priority),
+	// 				isr_fnct, 0, 0);
+	// 	irq_enable(DT_INST_IRQ_BY_IDX(0, 0, irq));
+	// } while (0);
 
-    *p_err = USBH_ERR_NONE;
+	*p_err = USBH_ERR_NONE;
 }
-
 
 /*
 *********************************************************************************************************
@@ -195,13 +208,12 @@ static  void  BSP_USBH_Template_ISR_Register (CPU_FNCT_PTR   isr_fnct,
 *********************************************************************************************************
 */
 
-static  void  BSP_USBH_Template_ISR_Unregister (USBH_ERR  *p_err)
+static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err)
 {
-    BSP_USBH_Template_ISR_Ptr = (CPU_FNCT_PTR)0;
+	BSP_USBH_Template_ISR_Ptr = (CPU_FNCT_PTR)0;
 
-   *p_err = USBH_ERR_NONE;
+	*p_err = USBH_ERR_NONE;
 }
-
 
 /*
 *********************************************************************************************************
@@ -217,13 +229,13 @@ static  void  BSP_USBH_Template_ISR_Unregister (USBH_ERR  *p_err)
 *********************************************************************************************************
 */
 
-static  void  BSP_USBH_Template_IntHandler (void)
+static void BSP_USBH_Template_IntHandler(void)
 {
-    if (BSP_USBH_Template_ISR_Ptr != (CPU_FNCT_PTR)0) {
-        BSP_USBH_Template_ISR_Ptr((void *)USBH_HC_Template_DrvPtr);
-    }
+	if (BSP_USBH_Template_ISR_Ptr != (CPU_FNCT_PTR)0)
+	{
+		BSP_USBH_Template_ISR_Ptr((void *)USBH_HC_Template_DrvPtr);
+	}
 }
-
 
 /*
 **************************************************************************************************************

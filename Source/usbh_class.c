@@ -369,7 +369,7 @@ void USBH_ClassResume(USBH_DEV *p_dev)
 
 USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 {
-    LOG_ERR("ClassDrvConn begin");
+    LOG_INF("ClassDrvConn begin");
     CPU_INT08U if_ix;
     CPU_INT08U nbr_if;
     CPU_BOOLEAN drv_found;
@@ -377,12 +377,12 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     USBH_CFG *p_cfg;
     USBH_IF *p_if;
 
-    LOG_ERR("ClassDrvConn 1");
+    LOG_INF("ProbeDev");
     err = USBH_ClassProbeDev(p_dev);
     if (err == USBH_ERR_NONE)
     {
         p_if = (USBH_IF *)0;
-        LOG_ERR("ClassDrvConn 2");
+        LOG_INF("ClassNotify");
 
         USBH_ClassNotify(p_dev, /* Find a class drv matching dev desc.                  */
                          p_if,
@@ -402,7 +402,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     {
         /* Empty Else Statement                                 */
     }
-    LOG_ERR("ClassDrvConn 3");
+    LOG_INF("CfgSet");
 
     err = USBH_CfgSet(p_dev, 1u); /* Select first cfg.                                    */
     if (err != USBH_ERR_NONE)
@@ -411,22 +411,21 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     }
 
     drv_found = DEF_FALSE;
-    LOG_ERR("ClassDrvConn 4");
+    LOG_INF("CfgGet");
     p_cfg = USBH_CfgGet(p_dev, (p_dev->SelCfg - 1)); /* Get active cfg struct.                               */
-    LOG_ERR("ClassDrvConn 5");
+    LOG_INF("CfgIF_NbrGet");
     nbr_if = USBH_CfgIF_NbrGet(p_cfg);
 
     for (if_ix = 0u; if_ix < nbr_if; if_ix++)
     { /* For all IFs present in cfg.                          */
-        LOG_ERR("ClassDrvConn 6");
+        LOG_INF("IF_Get");
         p_if = USBH_IF_Get(p_cfg, if_ix);
         if (p_if == (USBH_IF *)0)
         {
             return (USBH_ERR_NULL_PTR);
         }
-        LOG_ERR("ClassDrvConn 7");
+        LOG_INF("ProbeIF");
         err = USBH_ClassProbeIF(p_dev, p_if); /* Find class driver matching IF.                       */
-        LOG_ERR("ClassDrvConn after 7");
         if (err == USBH_ERR_NONE)
         {
             drv_found = DEF_TRUE;
@@ -452,7 +451,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 
     for (if_ix = 0u; if_ix < nbr_if; if_ix++)
     { /* For all IFs present in this cfg, notify app.         */
-        LOG_ERR("ClassDrvConn 8");
+        LOG_INF("IF_Get");
 
         p_if = USBH_IF_Get(p_cfg, if_ix);
         if (p_if == (USBH_IF *)0)
@@ -462,7 +461,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 
         if (p_if->ClassDevPtr != 0)
         {
-            LOG_ERR("ClassDrvConn 9");
+            LOG_INF("ClassNotify");
 
             USBH_ClassNotify(p_dev,
                              p_if,
@@ -627,42 +626,33 @@ static USBH_ERR USBH_ClassProbeDev(USBH_DEV *p_dev)
 static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
                                   USBH_IF *p_if)
 {
-    LOG_ERR("ClassProbeIF");
+    LOG_INF("ClassProbeIF");
     CPU_INT32U ix;
     USBH_CLASS_DRV *p_class_drv;
     void *p_class_dev;
     USBH_ERR err;
 
     err = USBH_ERR_CLASS_DRV_NOT_FOUND;
-    LOG_ERR("Probe 1");
     for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++)
     { /* Search drv list for matching IF class.               */
-        LOG_ERR("Probe 2");
         if (USBH_ClassDrvList[ix].InUse != 0u)
         {
-            LOG_ERR("Probe 3");
             p_class_drv = USBH_ClassDrvList[ix].ClassDrvPtr;
 
             if (p_class_drv->ProbeIF != (void *)0)
             {
-                LOG_ERR("Probe 4");
                 p_if->ClassDrvRegPtr = &USBH_ClassDrvList[ix];
-                LOG_ERR("Probe 5");
                 p_class_dev = p_class_drv->ProbeIF(p_dev, p_if, &err);
-                LOG_ERR("Probe 7");
 
                 if (err == USBH_ERR_NONE)
                 {
-                    LOG_ERR("Probe 8");
                     p_if->ClassDevPtr = p_class_dev; /* Drv found, store class dev ptr.                      */
                     return (err);
                 }
-                LOG_ERR("Probe 9");
                 p_if->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
             }
         }
     }
-    LOG_ERR("Probe 6");
 
     return (err);
 }

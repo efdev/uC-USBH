@@ -38,20 +38,22 @@
 #include <usbh_cfg.h>
 #include <zephyr.h>
 
+#include <logging/log.h>
+LOG_MODULE_REGISTER(os_layer);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
 
-#define USBH_OS_MUTEX_REQUIRED                                                 \
-	((((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) *               \
-	  USBH_CFG_MAX_NBR_DEVS) +                                             \
-	 USBH_CFG_MAX_NBR_DEVS + USBH_CFG_MAX_NBR_HC + USBH_CDC_CFG_MAX_DEV +  \
+#define USBH_OS_MUTEX_REQUIRED                                            \
+	((((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) *              \
+	  USBH_CFG_MAX_NBR_DEVS) +                                            \
+	 USBH_CFG_MAX_NBR_DEVS + USBH_CFG_MAX_NBR_HC + USBH_CDC_CFG_MAX_DEV + \
 	 USBH_HID_CFG_MAX_DEV + USBH_MSC_CFG_MAX_DEV)
-#define USBH_OS_SEM_REQUIRED                                                   \
-	(3u + (((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) *          \
-	       USBH_CFG_MAX_NBR_DEVS))
+#define USBH_OS_SEM_REQUIRED                                      \
+	(3u + (((USBH_CFG_MAX_NBR_EPS * USBH_CFG_MAX_NBR_IFS) + 1u) * \
+		   USBH_CFG_MAX_NBR_DEVS))
 #define USBH_OS_TCB_REQUIRED 4u
 #define USBH_OS_Q_REQUIRED 1u
 
@@ -168,7 +170,9 @@ void *USBH_OS_BusToVir(void *x)
 
 void USBH_OS_DlyMS(CPU_INT32U dly)
 {
-	k_msleep((s32_t)dly);
+	LOG_INF("delay time %d", dly);
+
+	k_sleep(K_MSEC(dly));
 }
 
 /*
@@ -240,7 +244,8 @@ USBH_ERR USBH_OS_MutexCreate(USBH_HMUTEX *p_mutex)
 USBH_ERR USBH_OS_MutexLock(USBH_HMUTEX mutex)
 {
 	int err = k_mutex_lock(&mutex, K_NO_WAIT);
-	if (err != 0) {
+	if (err != 0)
+	{
 		return USBH_ERR_OS_FAIL;
 	}
 	return (USBH_ERR_NONE);
@@ -264,7 +269,8 @@ USBH_ERR USBH_OS_MutexLock(USBH_HMUTEX mutex)
 USBH_ERR USBH_OS_MutexUnlock(USBH_HMUTEX mutex)
 {
 	int err = k_mutex_unlock(&mutex);
-	if (err != 0) {
+	if (err != 0)
+	{
 		return USBH_ERR_OS_FAIL;
 	}
 	return (USBH_ERR_NONE);
@@ -322,7 +328,8 @@ USBH_ERR USBH_OS_MutexDestroy(USBH_HMUTEX mutex)
 USBH_ERR USBH_OS_SemCreate(USBH_HSEM *p_sem, CPU_INT32U cnt)
 {
 	int err = k_sem_init(p_sem, cnt, 1);
-	if (err != 0) {
+	if (err != 0)
+	{
 		return USBH_ERR_OS_FAIL;
 	}
 
@@ -372,9 +379,12 @@ USBH_ERR USBH_OS_SemDestroy(USBH_HSEM sem)
 USBH_ERR USBH_OS_SemWait(USBH_HSEM sem, CPU_INT32U timeout)
 {
 	int err = k_sem_take(&sem, K_MSEC(timeout));
-	if (err == EAGAIN) {
+	if (err == EAGAIN)
+	{
 		return USBH_ERR_OS_TIMEOUT;
-	} else if (err != 0) {
+	}
+	else if (err != 0)
+	{
 		return USBH_ERR_OS_FAIL;
 	}
 
@@ -463,9 +473,9 @@ USBH_ERR USBH_OS_SemPost(USBH_HSEM sem)
 */
 
 USBH_ERR USBH_OS_TaskCreate(CPU_CHAR *p_name, CPU_INT32U prio,
-			    USBH_TASK_FNCT task_fnct, void *p_data,
-			    CPU_INT32U *p_stk, CPU_INT32U stk_size,
-			    USBH_HTASK *p_task)
+							USBH_TASK_FNCT task_fnct, void *p_data,
+							CPU_INT32U *p_stk, CPU_INT32U stk_size,
+							USBH_HTASK *p_task)
 {
 	return (USBH_ERR_NONE);
 }
@@ -531,9 +541,12 @@ USBH_ERR USBH_OS_TaskCreate(CPU_CHAR *p_name, CPU_INT32U prio,
 USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE *msg_q, void *p_msg)
 {
 	int err = k_msgq_put(msg_q, p_msg, K_NO_WAIT);
-	if (err == 0) {
+	if (err == 0)
+	{
 		err = USBH_ERR_NONE;
-	} else {
+	}
+	else
+	{
 		err = USBH_ERR_OS_FAIL;
 	}
 
@@ -566,14 +579,19 @@ USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE *msg_q, void *p_msg)
 */
 
 void USBH_OS_MsgQueueGet(USBH_HQUEUE *msg_q, CPU_INT32U timeout,
-			 USBH_ERR *p_err, void *p_data)
+						 USBH_ERR *p_err, void *p_data)
 {
 	int err = k_msgq_get(msg_q, p_data, K_MSEC(timeout));
-	if (err == 0) {
+	if (err == 0)
+	{
 		err = USBH_ERR_NONE;
-	} else if (err == EAGAIN) {
+	}
+	else if (err == EAGAIN)
+	{
 		err = USBH_ERR_OS_TIMEOUT;
-	} else {
+	}
+	else
+	{
 		err = USBH_ERR_OS_FAIL;
 	}
 

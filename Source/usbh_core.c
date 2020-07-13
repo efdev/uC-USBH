@@ -713,7 +713,7 @@ CPU_INT08U USBH_HC_Add(USBH_HC_CFG *p_hc_cfg, USBH_HC_DRV_API *p_drv_api,
 
 USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 {
-	LOG_ERR("Start.");
+	LOG_INF("Start.");
 	USBH_ERR err;
 	USBH_HC *p_hc;
 	USBH_DEV *p_rh_dev;
@@ -728,7 +728,7 @@ USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 
 	p_hc = &USBH_Host.HC_Tbl[hc_nbr];
 	p_rh_dev = p_hc->HC_Drv.RH_DevPtr;
-	LOG_ERR("call HC DevConn.");
+	LOG_INF("call HC DevConn.");
 	err = USBH_DevConn(
 		p_rh_dev); /* Add RH of given HC.                                  */
 	if (err == USBH_ERR_NONE)
@@ -741,7 +741,7 @@ USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 
 		USBH_DevDisconn(p_rh_dev);
 	}
-	LOG_ERR("call HCD Start.");
+	LOG_INF("call HCD Start.");
 
 	USBH_HCD_Start(p_hc, &err);
 
@@ -984,7 +984,7 @@ CPU_INT32U USBH_HC_FrameNbrGet(CPU_INT08U hc_nbr, USBH_ERR *p_err)
 
 USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 {
-	LOG_ERR("DevConn");
+	LOG_INF("DevConn");
 	USBH_ERR err;
 	CPU_INT08U nbr_cfgs;
 	CPU_INT08U cfg_ix;
@@ -993,30 +993,29 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 
 	p_dev->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
 	Mem_Clr(p_dev->DevDesc, USBH_LEN_DESC_DEV);
-	LOG_ERR("DevConn");
 
+	LOG_INF("DftlEP_Open");
 	err = USBH_DfltEP_Open(p_dev);
 	if (err != USBH_ERR_NONE)
 	{
 		return (err);
 	}
-	LOG_ERR("DevConn");
 
+	LOG_INF("DevDescRd");
 	err = USBH_DevDescRd(
 		p_dev); /* ------------------- RD DEV DESC -------------------- */
 	if (err != USBH_ERR_NONE)
 	{
 		return (err);
 	}
-	LOG_ERR("DevConn");
 
+	LOG_INF("DevAddrSet");
 	err = USBH_DevAddrSet(
 		p_dev); /* -------------- ASSIGN NEW ADDR TO DEV -------------- */
 	if (err != USBH_ERR_NONE)
 	{
 		return (err);
 	}
-	LOG_ERR("DevConn");
 
 	// #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
 	// 	USBH_PRINT_LOG("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
@@ -1054,7 +1053,6 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 	{
 		/* Empty Else Statement                                 */
 	}
-	LOG_ERR("DevConn");
 
 	for (cfg_ix = 0u; cfg_ix < nbr_cfgs;
 		 cfg_ix++)
@@ -1065,12 +1063,12 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 			return (err);
 		}
 	}
-	LOG_ERR("Call ClassDrvConn");
 
+	LOG_INF("Call ClassDrvConn");
 	err = USBH_ClassDrvConn(
 		p_dev); /* ------------- PROBE/LOAD CLASS DRV(S) -------------- */
-	LOG_ERR("DevConn");
-
+	
+	LOG_INF("DevConn done");
 	return (err);
 }
 
@@ -1949,6 +1947,7 @@ CPU_INT16U USBH_CtrlTx(USBH_DEV *p_dev, CPU_INT08U b_req,
 					   CPU_INT16U w_ix, void *p_data, CPU_INT16U w_len,
 					   CPU_INT32U timeout_ms, USBH_ERR *p_err)
 {
+	LOG_INF("CtrlTx");
 	CPU_INT16U xfer_len;
 
 	(void)USBH_OS_MutexLock(p_dev->DfltEP_Mutex);
@@ -1969,7 +1968,7 @@ CPU_INT16U USBH_CtrlTx(USBH_DEV *p_dev, CPU_INT08U b_req,
 	}
 
 	(void)USBH_OS_MutexUnlock(p_dev->DfltEP_Mutex);
-
+	LOG_INF("CtrlTx done");
 	return (xfer_len);
 }
 
@@ -2023,6 +2022,7 @@ CPU_INT16U USBH_CtrlRx(USBH_DEV *p_dev, CPU_INT08U b_req,
 					   CPU_INT16U w_ix, void *p_data, CPU_INT16U w_len,
 					   CPU_INT32U timeout_ms, USBH_ERR *p_err)
 {
+	LOG_INF("CtrlRx");
 	CPU_INT16U xfer_len;
 
 	(void)USBH_OS_MutexLock(p_dev->DfltEP_Mutex);
@@ -3068,7 +3068,7 @@ USBH_ERR USBH_EP_StallSet(USBH_EP *p_ep)
 {
 	USBH_ERR err;
 	USBH_DEV *p_dev;
-
+	LOG_INF("StallSet");
 	p_dev = p_ep->DevPtr;
 
 	(void)USBH_CtrlTx(p_dev, USBH_REQ_SET_FEATURE,
@@ -3113,7 +3113,7 @@ USBH_ERR USBH_EP_StallClr(USBH_EP *p_ep)
 	USBH_DEV *p_dev;
 
 	p_dev = p_ep->DevPtr;
-
+	LOG_INF("StallClr");
 	(void)USBH_CtrlTx(
 		p_dev,
 		USBH_REQ_CLR_FEATURE, /* See Note (1)                                         */
