@@ -38,7 +38,7 @@
 #include "usbh_hub.h"
 #include <soc.h>
 #include <logging/log.h>
-LOG_MODULE_REGISTER(hcd);
+LOG_MODULE_REGISTER(hcd, 4);
 
 /*
 *********************************************************************************************************
@@ -620,12 +620,12 @@ static void USBH_ATSAMX_HCD_Init(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 	//         return;
 	//     }
 
-	k_tid_t ATSAMX_URB_Process_Tid =
-		k_thread_create(&htask, ATSAMX_URB_ProcTaskStk,
-						K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
-						USBH_ATSAMX_URB_ProcTask, (void *)p_hc_drv,
-						NULL, NULL, ATSAMX_URB_PROC_TASK_PRIO, 0,
-						K_NO_WAIT);
+	// k_tid_t ATSAMX_URB_Process_Tid =
+	// 	k_thread_create(&htask, ATSAMX_URB_ProcTaskStk,
+	// 					K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
+	// 					USBH_ATSAMX_URB_ProcTask, (void *)p_hc_drv,
+	// 					NULL, NULL, ATSAMX_URB_PROC_TASK_PRIO, 0,
+	// 					K_NO_WAIT);
 
 	LOG_INF("Init done.");
 
@@ -650,11 +650,11 @@ static void USBH_ATSAMX_HCD_Init(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 *********************************************************************************************************
 */
 #define DT_DRV_COMPAT atmel_sam0_usb
-
+static USBH_HC_DRV *p_hc_drv_local;
 static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 {
 	LOG_INF("Start begin.");
-
+	p_hc_drv_local = p_hc_drv;
 	USBH_ATSAMX_REG *p_reg;
 	USBH_HC_BSP_API *p_bsp_api;
 	USBH_DRV_DATA *p_drv_data;
@@ -675,7 +675,7 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 		p_bsp_api->Init(p_hc_drv, p_err);
 		if (*p_err != USBH_ERR_NONE)
 		{
-			LOG_ERR("bsp init error %i", p_err);
+			//LOG_ERR("bsp init error %i", p_err);
 			return;
 		}
 	}
@@ -1897,15 +1897,17 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	CPU_INT16U max_pkt_size;
 	USBH_URB *p_urb;
 
-	p_hc_drv = (USBH_HC_DRV *)p_drv;
+	p_hc_drv = (USBH_HC_DRV *)p_hc_drv_local;
 	p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
 	p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
 	int_stat = p_reg->INTFLAG;
 	int_stat &= p_reg->INTENSET;
 
 	/* ----------- HANDLE INTERRUPT FLAG STATUS ----------- */
+	LOG_INF("Interrupt Flag");
 	if (int_stat & USBH_ATSAMX_INT_RST)
 	{
+		LOG_INF("1");
 		p_reg->INTFLAG =
 			USBH_ATSAMX_INT_RST; /* Clear BUS RESET interrupt flag                       */
 
@@ -1919,6 +1921,8 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	}
 	else if (int_stat & USBH_ATSAMX_INT_DDISC)
 	{
+		LOG_INF("2");
+
 		/* Clear device disconnect/connect interrupt flags      */
 		p_reg->INTFLAG =
 			(USBH_ATSAMX_INT_DDISC | USBH_ATSAMX_INT_DCONN);
@@ -1942,6 +1946,8 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	}
 	else if (int_stat & USBH_ATSAMX_INT_DCONN)
 	{
+		LOG_INF("3");
+
 		p_reg->INTENCLR =
 			USBH_ATSAMX_INT_DCONN; /* Disable device connect interrupt                     */
 
@@ -1958,7 +1964,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 		USBH_HUB_RH_Event(
 			p_hc_drv->RH_DevPtr); /* Notify the core layer.                               */
 	}
-
+	LOG_INF("Wake up to power");
 	/* ----------------- WAKE UP TO POWER ----------------- */
 	if (int_stat & (USBH_ATSAMX_INT_WAKEUP | USBH_ATSAMX_INT_DCONN))
 	{
@@ -1990,6 +1996,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	while (pipe_stat !=
 		   0u)
 	{ /* Check if there is a pipe to handle                   */
+		LOG_INF("CntTrailZeros");
 		pipe_nbr = CPU_CntTrailZeros(pipe_stat);
 		int_stat = p_reg->HPIPE[pipe_nbr].PINTFLAG;
 		int_stat &= p_reg->HPIPE[pipe_nbr].PINTENSET;
@@ -2004,6 +2011,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 			p_reg->HPIPE[pipe_nbr].PINTFLAG =
 				USBH_ATSAMX_PINT_STALL; /* Clear Stall interrupt flag             */
 			p_urb->Err = USBH_ERR_EP_STALL;
+			LOG_INF("URB_Done");
 			USBH_URB_Done(
 				p_urb); /* Notify the Core layer about the URB completion       */
 		}
@@ -2121,105 +2129,102 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 
 static void USBH_ATSAMX_URB_ProcTask(void *p_arg, void *p_arg2, void *p_arg3)
 {
-	USBH_HC_DRV *p_hc_drv;
-	USBH_DRV_DATA *p_drv_data;
-	USBH_ATSAMX_REG *p_reg;
-	USBH_URB *p_urb = NULL;
-	CPU_INT32U xfer_len;
-	CPU_INT08U pipe_nbr;
-	USBH_ERR p_err;
-	CPU_SR_ALLOC();
+	// USBH_HC_DRV *p_hc_drv;
+	// USBH_DRV_DATA *p_drv_data;
+	// USBH_ATSAMX_REG *p_reg;
+	// USBH_URB *p_urb = NULL;
+	// CPU_INT32U xfer_len;
+	// CPU_INT08U pipe_nbr;
+	// USBH_ERR p_err;
+	// CPU_SR_ALLOC();
 
-	p_hc_drv = (USBH_HC_DRV *)p_arg;
-	p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
-	p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
+	// p_hc_drv = (USBH_HC_DRV *)p_arg;
+	// p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
+	// p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
 
-	while (DEF_TRUE)
-	{
-		USBH_OS_MsgQueueGet(&ATSAMX_URB_Proc_Q, 0u, &p_err,
-							(void *)p_urb);
-		if (p_err != USBH_ERR_NONE)
-		{
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-			USBH_PRINT_LOG(
-				"DRV: Could not get URB from Queue.\r\n");
-#endif
-		}
+	// while (DEF_TRUE)
+	// {
+	// 	// k_yield();
+	// 	 k_usleep(10);
+	// 	// USBH_OS_MsgQueueGet(&ATSAMX_URB_Proc_Q, 0u, &p_err,
+	// 	// 					(void *)p_urb);
+	// 	// if (p_err != USBH_ERR_NONE)
+	// 	// {
+	// 	// 	LOG_ERR("Cannot get USB URB");
+	// 	// }
 
-		pipe_nbr = USBH_ATSAMX_GetPipeNbr(p_drv_data, p_urb->EP_Ptr);
+	// 	// pipe_nbr = USBH_ATSAMX_GetPipeNbr(p_drv_data, p_urb->EP_Ptr);
 
-		if (pipe_nbr != ATSAMX_INVALID_PIPE)
-		{
-			CPU_CRITICAL_ENTER();
-			xfer_len = USBH_ATSAMX_GET_BYTE_CNT(
-				p_drv_data->DescTbl[pipe_nbr]
-					.DescBank[0]
-					.PCKSIZE);
+	// 	// if (pipe_nbr != ATSAMX_INVALID_PIPE)
+	// 	// {
+	// 	// 	CPU_CRITICAL_ENTER();
+	// 	// 	xfer_len = USBH_ATSAMX_GET_BYTE_CNT(
+	// 	// 		p_drv_data->DescTbl[pipe_nbr]
+	// 	// 			.DescBank[0]
+	// 	// 			.PCKSIZE);
 
-			if (p_urb->Token ==
-				USBH_TOKEN_IN)
-			{ /* -------------- HANDLE IN TRANSACTIONS -------------- */
-				Mem_Copy(
-					(void *)((CPU_INT32U)p_urb->UserBufPtr +
-							 p_urb->XferLen),
-					p_urb->DMA_BufPtr, xfer_len);
-				/* Check if it rx'd more data than what was expected    */
-				if (xfer_len >
-					p_drv_data->PipeTbl[pipe_nbr]
-						.NextXferLen)
-				{ /* Rx'd more data than what was expected   */
-					p_urb->XferLen +=
-						p_drv_data->PipeTbl[pipe_nbr]
-							.NextXferLen;
-					p_urb->Err = USBH_ERR_HC_IO;
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-					USBH_PRINT_LOG(
-						"DRV: Rx'd more data than was expected.\r\n");
-#endif
-					USBH_URB_Done(
-						p_urb); /* Notify the Core layer about the URB completion       */
-				}
-				else
-				{
-					p_urb->XferLen += xfer_len;
-				}
-			}
-			else
-			{ /* ------------- HANDLE OUT TRANSACTIONS -------------- */
-				xfer_len = (p_drv_data->PipeTbl[pipe_nbr]
-								.AppBufLen -
-							xfer_len);
-				if (xfer_len == 0u)
-				{
-					p_urb->XferLen +=
-						p_drv_data->PipeTbl[pipe_nbr]
-							.NextXferLen;
-				}
-				else
-				{
-					p_urb->XferLen +=
-						(p_drv_data->PipeTbl[pipe_nbr]
-							 .NextXferLen -
-						 xfer_len);
-				}
-			}
+	// 	// 	if (p_urb->Token ==
+	// 	// 		USBH_TOKEN_IN)
+	// 	// 	{ /* -------------- HANDLE IN TRANSACTIONS -------------- */
+	// 	// 		Mem_Copy(
+	// 	// 			(void *)((CPU_INT32U)p_urb->UserBufPtr +
+	// 	// 					 p_urb->XferLen),
+	// 	// 			p_urb->DMA_BufPtr, xfer_len);
+	// 	// 		/* Check if it rx'd more data than what was expected    */
+	// 	// 		if (xfer_len >
+	// 	// 			p_drv_data->PipeTbl[pipe_nbr]
+	// 	// 				.NextXferLen)
+	// 	// 		{ /* Rx'd more data than what was expected   */
+	// 	// 			p_urb->XferLen +=
+	// 	// 				p_drv_data->PipeTbl[pipe_nbr]
+	// 	// 					.NextXferLen;
+	// 	// 			p_urb->Err = USBH_ERR_HC_IO;
 
-			if (p_urb->Err == USBH_ERR_NONE)
-			{
-				USBH_ATSAMX_PipeCfg(
-					p_urb, &p_reg->HPIPE[pipe_nbr],
-					&p_drv_data->PipeTbl[pipe_nbr],
-					&p_drv_data->DescTbl[pipe_nbr]
-						 .DescBank[0]);
+	// 	// 			LOG_ERR("DRV: Rx'd more data than was expected.\r\n");
+	// 	// 			USBH_URB_Done(
+	// 	// 				p_urb); /* Notify the Core layer about the URB completion       */
+	// 	// 		}
+	// 	// 		else
+	// 	// 		{
+	// 	// 			p_urb->XferLen += xfer_len;
+	// 	// 		}
+	// 	// 	}
+	// 	// 	else
+	// 	// 	{ /* ------------- HANDLE OUT TRANSACTIONS -------------- */
+	// 	// 		xfer_len = (p_drv_data->PipeTbl[pipe_nbr]
+	// 	// 						.AppBufLen -
+	// 	// 					xfer_len);
+	// 	// 		if (xfer_len == 0u)
+	// 	// 		{
+	// 	// 			p_urb->XferLen +=
+	// 	// 				p_drv_data->PipeTbl[pipe_nbr]
+	// 	// 					.NextXferLen;
+	// 	// 		}
+	// 	// 		else
+	// 	// 		{
+	// 	// 			p_urb->XferLen +=
+	// 	// 				(p_drv_data->PipeTbl[pipe_nbr]
+	// 	// 					 .NextXferLen -
+	// 	// 				 xfer_len);
+	// 	// 		}
+	// 	// 	}
 
-				p_reg->HPIPE[pipe_nbr].PINTENSET =
-					USBH_ATSAMX_PINT_TRCPT; /* Enable transfer complete interrupt */
-				p_reg->HPIPE[pipe_nbr].PSTATUSCLR =
-					USBH_ATSAMX_PSTATUS_PFREEZE; /* Start  transfer                    */
-			}
-			CPU_CRITICAL_EXIT();
-		}
-	}
+	// 	// 	if (p_urb->Err == USBH_ERR_NONE)
+	// 	// 	{
+	// 	// 		USBH_ATSAMX_PipeCfg(
+	// 	// 			p_urb, &p_reg->HPIPE[pipe_nbr],
+	// 	// 			&p_drv_data->PipeTbl[pipe_nbr],
+	// 	// 			&p_drv_data->DescTbl[pipe_nbr]
+	// 	// 				 .DescBank[0]);
+
+	// 	// 		p_reg->HPIPE[pipe_nbr].PINTENSET =
+	// 	// 			USBH_ATSAMX_PINT_TRCPT; /* Enable transfer complete interrupt */
+	// 	// 		p_reg->HPIPE[pipe_nbr].PSTATUSCLR =
+	// 	// 			USBH_ATSAMX_PSTATUS_PFREEZE; /* Start  transfer                    */
+	// 	// 	}
+	// 	// 	CPU_CRITICAL_EXIT();
+	// 	// }
+	// }
 }
 
 /*

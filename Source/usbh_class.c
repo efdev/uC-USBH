@@ -35,7 +35,7 @@
 #include "usbh_class.h"
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(usbh_class);
+LOG_MODULE_REGISTER(usbh_class, 2);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES

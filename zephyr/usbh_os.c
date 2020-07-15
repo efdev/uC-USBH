@@ -171,8 +171,9 @@ void *USBH_OS_BusToVir(void *x)
 void USBH_OS_DlyMS(CPU_INT32U dly)
 {
 	LOG_INF("delay time %d", dly);
+	k_busy_wait((dly*1000));
 
-	k_sleep(K_MSEC(dly));
+	//k_sleep(K_MSEC(dly));
 }
 
 /*
@@ -191,7 +192,8 @@ void USBH_OS_DlyMS(CPU_INT32U dly)
 
 void USBH_OS_DlyUS(CPU_INT32U dly)
 {
-	k_usleep((s32_t)dly);
+	k_busy_wait(dly);
+	//k_sleep(K_USEC(dly));
 }
 
 /*
@@ -376,9 +378,9 @@ USBH_ERR USBH_OS_SemDestroy(USBH_HSEM sem)
 *********************************************************************************************************
 */
 
-USBH_ERR USBH_OS_SemWait(USBH_HSEM sem, CPU_INT32U timeout)
+USBH_ERR USBH_OS_SemWait(USBH_HSEM *sem, CPU_INT32U timeout)
 {
-	int err = k_sem_take(&sem, K_MSEC(timeout));
+	int err = k_sem_take(sem, K_MSEC(timeout));
 	if (err == EAGAIN)
 	{
 		return USBH_ERR_OS_TIMEOUT;
@@ -408,9 +410,9 @@ USBH_ERR USBH_OS_SemWait(USBH_HSEM sem, CPU_INT32U timeout)
 *********************************************************************************************************
 */
 
-USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM sem)
+USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM *sem)
 {
-	k_sem_reset(&sem);
+	k_sem_reset(sem);
 	return (USBH_ERR_NONE);
 }
 
@@ -429,9 +431,10 @@ USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM sem)
 *********************************************************************************************************
 */
 
-USBH_ERR USBH_OS_SemPost(USBH_HSEM sem)
+USBH_ERR USBH_OS_SemPost(USBH_HSEM *sem)
 {
-	k_sem_give(&sem);
+	LOG_INF("SemPost %d", sem);
+	k_sem_reset(&sem);
 
 	return (USBH_ERR_NONE);
 }

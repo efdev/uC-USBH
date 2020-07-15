@@ -120,12 +120,12 @@ USBH_ERR      USBH_OS_MutexDestroy   (USBH_HMUTEX       mutex);
 USBH_ERR      USBH_OS_SemCreate      (USBH_HSEM        *p_sem,
                                       CPU_INT32U        cnt);
 
-USBH_ERR      USBH_OS_SemWait        (USBH_HSEM         sem,
+USBH_ERR      USBH_OS_SemWait        (USBH_HSEM         *sem,
                                       CPU_INT32U        timeout);
 
-USBH_ERR      USBH_OS_SemWaitAbort   (USBH_HSEM         sem);
+USBH_ERR      USBH_OS_SemWaitAbort   (USBH_HSEM         *sem);
 
-USBH_ERR      USBH_OS_SemPost        (USBH_HSEM         sem);
+USBH_ERR      USBH_OS_SemPost        (USBH_HSEM         *sem);
 
 USBH_ERR      USBH_OS_SemDestroy     (USBH_HSEM         sem);
 

@@ -37,7 +37,7 @@
 #include "usbh_hub.h"
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(usbh_core);
+LOG_MODULE_REGISTER(usbh_core, 2);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
@@ -3310,14 +3310,15 @@ void USBH_URB_Done(USBH_URB *p_urb)
 
 			CPU_CRITICAL_EXIT();
 
-			(void)USBH_OS_SemPost(USBH_URB_Sem);
+			(void)USBH_OS_SemPost(&USBH_URB_Sem);
 		}
 		else
 		{
 			(void)USBH_OS_SemPost(
-				p_urb->Sem); /* Post notification to waiting task.                   */
+				&p_urb->Sem); /* Post notification to waiting task.                   */
 		}
 	}
+	LOG_INF("URB_Done");
 }
 
 /*
@@ -3801,7 +3802,7 @@ static CPU_INT32U USBH_SyncXfer(USBH_EP *p_ep, void *p_buf, CPU_INT32U buf_len,
 		USBH_ERR_NONE)
 	{ /* Transfer URB to HC.                                  */
 		*p_err = USBH_OS_SemWait(
-			p_urb->Sem,
+			&p_urb->Sem,
 			timeout_ms); /* Wait on URB completion notification.                 */
 	}
 
@@ -4130,7 +4131,7 @@ static void USBH_URB_Notify(USBH_URB *p_urb)
 		(p_urb->FnctPtr == (void *)0))
 	{
 		p_urb->State = USBH_URB_STATE_NONE;
-		(void)USBH_OS_SemWaitAbort(p_urb->Sem);
+		(void)USBH_OS_SemWaitAbort(&p_urb->Sem);
 	}
 
 	if (p_urb->FnctPtr !=
@@ -5246,7 +5247,7 @@ static void USBH_AsyncTask(void *p_arg, void *p_arg2, void *p_arg3)
 	while (DEF_TRUE)
 	{
 		(void)USBH_OS_SemWait(
-			USBH_URB_Sem,
+			&USBH_URB_Sem,
 			0u); /* Wait for URBs processed by HC.                       */
 
 		CPU_CRITICAL_ENTER();
@@ -5267,5 +5268,7 @@ static void USBH_AsyncTask(void *p_arg, void *p_arg2, void *p_arg3)
 		{
 			USBH_URB_Complete(p_urb);
 		}
+		k_sleep(K_USEC(10));
+		// k_yield();
 	}
 }
