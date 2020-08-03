@@ -37,14 +37,14 @@
 #include "usbh_hub.h"
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(usbh_core, 2);
+LOG_MODULE_REGISTER(usbh_core, 4);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
 K_THREAD_STACK_DEFINE(USBH_AsyncTask_Stack, 512);
-K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 512);
+K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 1024);
 
 /*
 *********************************************************************************************************
@@ -402,35 +402,15 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 		k_thread_create(&USBH_Host.HAsyncTask, USBH_AsyncTask_Stack,
 						K_THREAD_STACK_SIZEOF(USBH_AsyncTask_Stack),
 						USBH_AsyncTask, NULL, NULL, NULL,
-						async_task_info->Prio, 0, K_NO_WAIT);
-	// err = USBH_OS_TaskCreate(             "USBH_Asynctask",
-	//                                        async_task_info->Prio,
-	//                                        USBH_AsyncTask,
-	//                          (void       *)0,
-	//                          (CPU_INT32U *)async_task_info->StackPtr,
-	//                                        async_task_info->StackSize,
-	//                                       &USBH_Host.HAsyncTask);
-	// if (err != USBH_ERR_NONE) {
-	//     return (err);
-	// }
+						0, 0, K_NO_WAIT);
+
 
 	/* Create a task for processing hub events.             */
 	k_tid_t USBH_HUB_Event_Tid =
 		k_thread_create(&USBH_Host.HHubTask, USBH_HUB_EventTask_Stack,
 						K_THREAD_STACK_SIZEOF(USBH_HUB_EventTask_Stack),
 						USBH_HUB_EventTask, NULL, NULL, NULL,
-						hub_task_info->Prio, 0, K_NO_WAIT);
-
-	// err = USBH_OS_TaskCreate(             "USBH_HUB_EventTask",
-	//                                        hub_task_info->Prio,
-	//                                        USBH_HUB_EventTask,
-	//                          (void       *)0,
-	//                          (CPU_INT32U *)hub_task_info->StackPtr,
-	//                                        hub_task_info->StackSize,
-	//                                       &USBH_Host.HHubTask);
-	// if (err != USBH_ERR_NONE) {
-	//     return (err);
-	// }
+						0, 0, K_NO_WAIT);
 
 	for (ix = 0u; ix < USBH_MAX_NBR_DEVS;
 		 ix++)
@@ -502,6 +482,7 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 
 USBH_ERR USBH_Suspend(void)
 {
+
 	CPU_INT08U ix;
 	USBH_HC *hc;
 	USBH_ERR err;
@@ -713,7 +694,7 @@ CPU_INT08U USBH_HC_Add(USBH_HC_CFG *p_hc_cfg, USBH_HC_DRV_API *p_drv_api,
 
 USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 {
-	LOG_INF("Start.");
+	LOG_DBG("Start.");
 	USBH_ERR err;
 	USBH_HC *p_hc;
 	USBH_DEV *p_rh_dev;
@@ -728,7 +709,7 @@ USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 
 	p_hc = &USBH_Host.HC_Tbl[hc_nbr];
 	p_rh_dev = p_hc->HC_Drv.RH_DevPtr;
-	LOG_INF("call HC DevConn.");
+	LOG_DBG("call HC DevConn.");
 	err = USBH_DevConn(
 		p_rh_dev); /* Add RH of given HC.                                  */
 	if (err == USBH_ERR_NONE)
@@ -741,7 +722,7 @@ USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 
 		USBH_DevDisconn(p_rh_dev);
 	}
-	LOG_INF("call HCD Start.");
+	LOG_DBG("call HCD Start.");
 
 	USBH_HCD_Start(p_hc, &err);
 
@@ -814,6 +795,7 @@ USBH_ERR USBH_HC_Stop(CPU_INT08U hc_nbr)
 
 USBH_ERR USBH_HC_PortEn(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 {
+	LOG_INF("PortEn");
 	USBH_ERR err;
 	USBH_HC *p_hc;
 
@@ -857,6 +839,7 @@ USBH_ERR USBH_HC_PortEn(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 
 USBH_ERR USBH_HC_PortDis(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 {
+	LOG_INF("PortDis");
 	USBH_ERR err;
 	USBH_HC *p_hc;
 
@@ -894,6 +877,7 @@ USBH_ERR USBH_HC_PortDis(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 
 CPU_INT32U USBH_HC_FrameNbrGet(CPU_INT08U hc_nbr, USBH_ERR *p_err)
 {
+	LOG_INF("FrameNbrGet");
 	CPU_INT32U frame_nbr;
 	USBH_HC *p_hc;
 
@@ -984,7 +968,7 @@ CPU_INT32U USBH_HC_FrameNbrGet(CPU_INT08U hc_nbr, USBH_ERR *p_err)
 
 USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 {
-	LOG_INF("DevConn");
+	LOG_DBG("DevConn");
 	USBH_ERR err;
 	CPU_INT08U nbr_cfgs;
 	CPU_INT08U cfg_ix;
@@ -994,14 +978,14 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 	p_dev->ClassDrvRegPtr = (USBH_CLASS_DRV_REG *)0;
 	Mem_Clr(p_dev->DevDesc, USBH_LEN_DESC_DEV);
 
-	LOG_INF("DftlEP_Open");
+	LOG_DBG("DftlEP_Open");
 	err = USBH_DfltEP_Open(p_dev);
 	if (err != USBH_ERR_NONE)
 	{
 		return (err);
 	}
 
-	LOG_INF("DevDescRd");
+	LOG_DBG("DevDescRd");
 	err = USBH_DevDescRd(
 		p_dev); /* ------------------- RD DEV DESC -------------------- */
 	if (err != USBH_ERR_NONE)
@@ -1009,7 +993,7 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 		return (err);
 	}
 
-	LOG_INF("DevAddrSet");
+	LOG_DBG("DevAddrSet");
 	err = USBH_DevAddrSet(
 		p_dev); /* -------------- ASSIGN NEW ADDR TO DEV -------------- */
 	if (err != USBH_ERR_NONE)
@@ -1017,11 +1001,8 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 		return (err);
 	}
 
-	// #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-	// 	USBH_PRINT_LOG("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
-	// 				   p_dev->DevAddr);
-	// #endif
-
+		LOG_INF("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
+					   p_dev->DevAddr);
 	// #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
 	// 	/* -------- PRINT MANUFACTURER AND PRODUCT STR -------- */
 	// 	if (p_dev->DevDesc[14] !=
@@ -1064,11 +1045,11 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 		}
 	}
 
-	LOG_INF("Call ClassDrvConn");
+	LOG_DBG("Call ClassDrvConn");
 	err = USBH_ClassDrvConn(
 		p_dev); /* ------------- PROBE/LOAD CLASS DRV(S) -------------- */
 	
-	LOG_INF("DevConn done");
+	LOG_DBG("DevConn done");
 	return (err);
 }
 
@@ -1088,6 +1069,7 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 
 void USBH_DevDisconn(USBH_DEV *p_dev)
 {
+	LOG_INF("DevDisconn");
 	USBH_ClassDrvDisconn(
 		p_dev); /* Unload class drv(s).                                 */
 
@@ -1947,7 +1929,7 @@ CPU_INT16U USBH_CtrlTx(USBH_DEV *p_dev, CPU_INT08U b_req,
 					   CPU_INT16U w_ix, void *p_data, CPU_INT16U w_len,
 					   CPU_INT32U timeout_ms, USBH_ERR *p_err)
 {
-	LOG_INF("CtrlTx");
+	LOG_DBG("CtrlTx");
 	CPU_INT16U xfer_len;
 
 	(void)USBH_OS_MutexLock(p_dev->DfltEP_Mutex);
@@ -1968,7 +1950,6 @@ CPU_INT16U USBH_CtrlTx(USBH_DEV *p_dev, CPU_INT08U b_req,
 	}
 
 	(void)USBH_OS_MutexUnlock(p_dev->DfltEP_Mutex);
-	LOG_INF("CtrlTx done");
 	return (xfer_len);
 }
 
@@ -2022,7 +2003,7 @@ CPU_INT16U USBH_CtrlRx(USBH_DEV *p_dev, CPU_INT08U b_req,
 					   CPU_INT16U w_ix, void *p_data, CPU_INT16U w_len,
 					   CPU_INT32U timeout_ms, USBH_ERR *p_err)
 {
-	LOG_INF("CtrlRx");
+	LOG_DBG("CtrlRx");
 	CPU_INT16U xfer_len;
 
 	(void)USBH_OS_MutexLock(p_dev->DfltEP_Mutex);
@@ -2031,12 +2012,14 @@ CPU_INT16U USBH_CtrlRx(USBH_DEV *p_dev, CPU_INT08U b_req,
 		 DEF_TRUE) && /* Check if RH features are supported.                  */
 		(p_dev->HC_Ptr->IsVirRootHub == DEF_TRUE))
 	{
+		LOG_DBG("request from roothub");
 		xfer_len = USBH_HUB_RH_CtrlReq(
 			p_dev->HC_Ptr, /* Send req to virtual HUB.                             */
 			b_req, bm_req_type, w_val, w_ix, p_data, w_len, p_err);
 	}
 	else
 	{
+		LOG_DBG("request from non roothub");
 		xfer_len = USBH_SyncCtrlXfer(&p_dev->DfltEP, b_req, bm_req_type,
 									 w_val, w_ix, p_data, w_len,
 									 timeout_ms, p_err);
@@ -3068,7 +3051,7 @@ USBH_ERR USBH_EP_StallSet(USBH_EP *p_ep)
 {
 	USBH_ERR err;
 	USBH_DEV *p_dev;
-	LOG_INF("StallSet");
+	LOG_DBG("StallSet");
 	p_dev = p_ep->DevPtr;
 
 	(void)USBH_CtrlTx(p_dev, USBH_REQ_SET_FEATURE,
@@ -3113,7 +3096,7 @@ USBH_ERR USBH_EP_StallClr(USBH_EP *p_ep)
 	USBH_DEV *p_dev;
 
 	p_dev = p_ep->DevPtr;
-	LOG_INF("StallClr");
+	LOG_DBG("StallClr");
 	(void)USBH_CtrlTx(
 		p_dev,
 		USBH_REQ_CLR_FEATURE, /* See Note (1)                                         */
@@ -3210,6 +3193,7 @@ USBH_ERR USBH_EP_Reset(USBH_DEV *p_dev, USBH_EP *p_ep)
 
 USBH_ERR USBH_EP_Close(USBH_EP *p_ep)
 {
+	LOG_INF("EP Close");
 	USBH_ERR err;
 	USBH_DEV *p_dev;
 	USBH_URB *p_async_urb;
@@ -3231,7 +3215,7 @@ USBH_ERR USBH_EP_Close(USBH_EP *p_ep)
 			&p_ep->URB); /* Abort any pending URB.                               */
 	}
 
-	// if (p_ep->URB.Sem != (USBH_HSEM )0) {                       /* Close EP sem and mutex.                              */
+	// if (p_ep->URB.Sem != (USBH_HSEM )*0) {                       /* Close EP sem and mutex.                              */
 	//     (void)USBH_OS_SemDestroy(p_ep->URB.Sem);
 	//     p_ep->URB.Sem = (USBH_HSEM )0;
 	// }
@@ -3307,7 +3291,6 @@ void USBH_URB_Done(USBH_URB *p_urb)
 				USBH_URB_TailPtr->NxtPtr = p_urb;
 				USBH_URB_TailPtr = p_urb;
 			}
-
 			CPU_CRITICAL_EXIT();
 
 			(void)USBH_OS_SemPost(&USBH_URB_Sem);
@@ -3318,7 +3301,7 @@ void USBH_URB_Done(USBH_URB *p_urb)
 				&p_urb->Sem); /* Post notification to waiting task.                   */
 		}
 	}
-	LOG_INF("URB_Done");
+	LOG_DBG("URB_Done");
 }
 
 /*
@@ -3764,6 +3747,7 @@ static CPU_INT32U USBH_SyncXfer(USBH_EP *p_ep, void *p_buf, CPU_INT32U buf_len,
 								USBH_ISOC_DESC *p_isoc_desc, USBH_TOKEN token,
 								CPU_INT32U timeout_ms, USBH_ERR *p_err)
 {
+	LOG_DBG("SyncXfer");
 	CPU_INT32U len;
 	USBH_URB *p_urb;
 
@@ -3974,6 +3958,7 @@ static CPU_INT16U USBH_SyncCtrlXfer(USBH_EP *p_ep, CPU_INT08U b_req,
 									CPU_INT16U w_len, CPU_INT32U timeout_ms,
 									USBH_ERR *p_err)
 {
+	LOG_DBG("SyncCtrlXfer");
 	USBH_SETUP_REQ setup;
 	CPU_INT08U setup_buf[8];
 	CPU_BOOLEAN is_in;
@@ -4081,7 +4066,6 @@ static void USBH_URB_Abort(USBH_URB *p_urb)
 	{
 		/* Empty Else Statement                                 */
 	}
-
 	CPU_CRITICAL_EXIT();
 
 	if (cmpl == DEF_TRUE)
@@ -4126,7 +4110,6 @@ static void USBH_URB_Notify(USBH_URB *p_urb)
 	p_isoc_desc = p_urb->IsocDescPtr;
 
 	CPU_CRITICAL_ENTER();
-
 	if ((p_urb->State == USBH_URB_STATE_ABORTED) &&
 		(p_urb->FnctPtr == (void *)0))
 	{
@@ -4764,6 +4747,7 @@ static USBH_ERR USBH_CfgParse(USBH_DEV *p_dev, USBH_CFG *p_cfg)
 
 static USBH_ERR USBH_DevAddrSet(USBH_DEV *p_dev)
 {
+	LOG_INF("set device address");
 	USBH_ERR err;
 	CPU_INT08U retry;
 
@@ -5064,6 +5048,7 @@ static USBH_DESC_HDR *USBH_NextDescGet(void *p_buf, CPU_INT32U *p_offset)
 
 static void USBH_FmtSetupReq(USBH_SETUP_REQ *p_setup_req, void *p_buf_dest)
 {
+	LOG_DBG("FmtSetupReq");
 	USBH_SETUP_REQ *p_buf_dest_setup_req;
 
 	p_buf_dest_setup_req = (USBH_SETUP_REQ *)p_buf_dest;
@@ -5268,7 +5253,5 @@ static void USBH_AsyncTask(void *p_arg, void *p_arg2, void *p_arg3)
 		{
 			USBH_URB_Complete(p_urb);
 		}
-		k_sleep(K_USEC(10));
-		// k_yield();
 	}
 }

@@ -219,7 +219,7 @@
                                                                 /*  Maximum number of USB hub                           */
                                                                 /*  The maximum number of external and root hub that ...*/
                                                                 /*  ... can be connected.                               */
-#define  USBH_CFG_MAX_HUBS                                 2u
+#define  USBH_CFG_MAX_HUBS                                 3u
 
                                                                 /*  Maximum number of port per USB hub                  */
                                                                 /*  The maximum number of supported ports per hub. ...  */

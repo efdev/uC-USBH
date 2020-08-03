@@ -170,10 +170,8 @@ void *USBH_OS_BusToVir(void *x)
 
 void USBH_OS_DlyMS(CPU_INT32U dly)
 {
-	LOG_INF("delay time %d", dly);
-	k_busy_wait((dly*1000));
-
-	//k_sleep(K_MSEC(dly));
+	//k_busy_wait((dly*1000));
+	k_sleep(K_MSEC(dly));
 }
 
 /*
@@ -192,8 +190,8 @@ void USBH_OS_DlyMS(CPU_INT32U dly)
 
 void USBH_OS_DlyUS(CPU_INT32U dly)
 {
-	k_busy_wait(dly);
-	//k_sleep(K_USEC(dly));
+	//k_busy_wait(dly);
+	k_sleep(K_USEC(dly));
 }
 
 /*
@@ -329,7 +327,7 @@ USBH_ERR USBH_OS_MutexDestroy(USBH_HMUTEX mutex)
 
 USBH_ERR USBH_OS_SemCreate(USBH_HSEM *p_sem, CPU_INT32U cnt)
 {
-	int err = k_sem_init(p_sem, cnt, 1);
+	int err = k_sem_init(p_sem, cnt, USBH_OS_SEM_REQUIRED);
 	if (err != 0)
 	{
 		return USBH_ERR_OS_FAIL;
@@ -380,7 +378,16 @@ USBH_ERR USBH_OS_SemDestroy(USBH_HSEM sem)
 
 USBH_ERR USBH_OS_SemWait(USBH_HSEM *sem, CPU_INT32U timeout)
 {
-	int err = k_sem_take(sem, K_MSEC(timeout));
+	int err = 0;
+	if (timeout == 0)
+	{
+		err = k_sem_take(sem, K_FOREVER);
+	}
+	else
+	{
+		err = k_sem_take(sem, K_MSEC(timeout));
+	}
+
 	if (err == EAGAIN)
 	{
 		return USBH_ERR_OS_TIMEOUT;
@@ -389,7 +396,6 @@ USBH_ERR USBH_OS_SemWait(USBH_HSEM *sem, CPU_INT32U timeout)
 	{
 		return USBH_ERR_OS_FAIL;
 	}
-
 	return (USBH_ERR_NONE);
 }
 
@@ -433,9 +439,9 @@ USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM *sem)
 
 USBH_ERR USBH_OS_SemPost(USBH_HSEM *sem)
 {
-	LOG_INF("SemPost %d", sem);
-	k_sem_reset(&sem);
-
+	//LOG_INF("SemPost %d", sem);
+	//k_sem_reset(sem);
+	k_sem_give(sem);
 	return (USBH_ERR_NONE);
 }
 
@@ -584,12 +590,20 @@ USBH_ERR USBH_OS_MsgQueuePut(USBH_HQUEUE *msg_q, void *p_msg)
 void USBH_OS_MsgQueueGet(USBH_HQUEUE *msg_q, CPU_INT32U timeout,
 						 USBH_ERR *p_err, void *p_data)
 {
-	int err = k_msgq_get(msg_q, p_data, K_MSEC(timeout));
+	int err = 0;
+	if (timeout == 0)
+	{
+		err = k_msgq_get(msg_q, p_data, K_FOREVER);
+	}
+	else
+	{
+		err = k_msgq_get(msg_q, p_data, K_MSEC(timeout));
+	}
 	if (err == 0)
 	{
 		err = USBH_ERR_NONE;
 	}
-	else if (err == EAGAIN)
+	else if (err == EAGAIN || err == ENOMSG)
 	{
 		err = USBH_ERR_OS_TIMEOUT;
 	}

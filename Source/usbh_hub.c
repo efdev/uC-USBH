@@ -37,7 +37,7 @@
 #include "usbh_class.h"
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(hub, 4);
+LOG_MODULE_REGISTER(hub);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
@@ -279,10 +279,7 @@ void USBH_HUB_EventTask(void *p_arg, void *p_arg2, void *p_arg3)
     while (DEF_TRUE)
     {
         (void)USBH_OS_SemWait(&USBH_HUB_EventSem, 0u);
-
         USBH_HUB_EventProcess();
-        k_sleep(K_USEC(10));
-        // k_yield();
     }
 }
 
@@ -415,7 +412,7 @@ static void USBH_HUB_GlobalInit(USBH_ERR *p_err)
                    &err_lib);
     if (err_lib != LIB_MEM_ERR_NONE)
     {
-        printk("error %d\n", err_lib);
+        LOG_ERR("alloc memory %d\n", err_lib);
         *p_err = USBH_ERR_ALLOC;
         return;
     }
@@ -924,11 +921,9 @@ static void USBH_HUB_ISR(USBH_EP *p_ep,
         {
             if (p_hub_dev->ErrCnt < 3u)
             {
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-                USBH_PRINT_LOG("USBH_HUB_ISR() fails. Err=%d errcnt=%d\r\n",
-                               err,
-                               p_hub_dev->ErrCnt);
-#endif
+                LOG_ERR("USBH_HUB_ISR() fails. Err=%d errcnt=%d\r\n",
+                        err,
+                        p_hub_dev->ErrCnt);
 
                 p_hub_dev->ErrCnt++;
                 USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
@@ -978,6 +973,7 @@ static void USBH_HUB_ISR(USBH_EP *p_ep,
 
 static void USBH_HUB_EventProcess(void)
 {
+    LOG_INF("EventProcess");
     CPU_INT16U nbr_ports;
     CPU_INT16U port_nbr;
     MEM_POOL *p_dev_pool;
@@ -1010,6 +1006,7 @@ static void USBH_HUB_EventProcess(void)
 
     if (p_hub_dev->State == USBH_CLASS_DEV_STATE_DISCONN)
     {
+        LOG_INF("device state disconnected");
         err = USBH_HUB_RefRel(p_hub_dev);
         if (err != USBH_ERR_NONE)
         {
@@ -1036,7 +1033,7 @@ static void USBH_HUB_EventProcess(void)
         /* ------------- CONNECTION STATUS CHANGE ------------- */
         if (DEF_BIT_IS_SET(port_status.wPortChange, USBH_HUB_STATUS_C_PORT_CONN) == DEF_TRUE)
         {
-
+            LOG_INF("connection status change");
             err = USBH_HUB_PortConnChngClr(p_hub_dev, /* Clr port conn chng.                                  */
                                            port_nbr);
             if (err != USBH_ERR_NONE)
@@ -1047,9 +1044,7 @@ static void USBH_HUB_EventProcess(void)
             if (DEF_BIT_IS_SET(port_status.wPortStatus, USBH_HUB_STATUS_PORT_CONN) == DEF_TRUE)
             {
 
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-                USBH_PRINT_LOG("Port %d : Device Connected.\r\n", port_nbr);
-#endif
+                LOG_INF("Port %d : Device Connected.\r\n", port_nbr);
 
                 p_hub_dev->ConnCnt = 0; /* Reset re-connection counter                          */
                 p_dev = p_hub_dev->DevPtrList[port_nbr - 1u];
@@ -1075,9 +1070,7 @@ static void USBH_HUB_EventProcess(void)
             }
             else
             { /* --------------- DEV HAS BEEN REMOVED --------------- */
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-                USBH_PRINT_LOG("Port %d : Device Removed.\r\n", port_nbr);
-#endif
+                LOG_INF("device has been removed");
                 USBH_OS_DlyMS(10u); /* Wait for any pending I/O xfer to rtn err.            */
 
                 p_dev = p_hub_dev->DevPtrList[port_nbr - 1u];
@@ -1096,7 +1089,7 @@ static void USBH_HUB_EventProcess(void)
         /* ------------- PORT RESET STATUS CHANGE ------------- */
         if (DEF_BIT_IS_SET(port_status.wPortChange, USBH_HUB_STATUS_C_PORT_RESET) == DEF_TRUE)
         {
-
+            LOG_INF("port reset status change");
             err = USBH_HUB_PortRstChngClr(p_hub_dev, port_nbr);
             if (err != USBH_ERR_NONE)
             {
@@ -1128,10 +1121,8 @@ static void USBH_HUB_EventProcess(void)
                     dev_spd = USBH_DEV_SPD_FULL;
                 }
 
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-                USBH_PRINT_LOG("Port %d : Port Reset complete, device speed is %s\r\n", port_nbr,
-                               (dev_spd == USBH_DEV_SPD_LOW) ? "LOW Speed(1.5 Mb/Sec)" : (dev_spd == USBH_DEV_SPD_FULL) ? "FULL Speed(12 Mb/Sec)" : "HIGH Speed(480 Mb/Sec)");
-#endif
+                LOG_INF("Port %d : Port Reset complete, device speed is %s\r\n", port_nbr,
+                        (dev_spd == USBH_DEV_SPD_LOW) ? "LOW Speed(1.5 Mb/Sec)" : (dev_spd == USBH_DEV_SPD_FULL) ? "FULL Speed(12 Mb/Sec)" : "HIGH Speed(480 Mb/Sec)");
 
                 p_dev = p_hub_dev->DevPtrList[port_nbr - 1u];
 
@@ -1153,9 +1144,7 @@ static void USBH_HUB_EventProcess(void)
                     USBH_HUB_PortDis(p_hub_dev, port_nbr);
                     USBH_HUB_RefRel(p_hub_dev);
 
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-                    USBH_PRINT_LOG("ERROR: Cannot allocate device.\r\n");
-#endif
+                    LOG_INF("ERROR: Cannot allocate device.\r\n");
                     USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
 
                     return;
@@ -1187,7 +1176,7 @@ static void USBH_HUB_EventProcess(void)
                 err = USBH_DevConn(p_dev); /* Conn dev.                                            */
                 if (err != USBH_ERR_NONE)
                 {
-                    USBH_PRINT_ERR(err);
+                    LOG_WRN("%d", err);
 
                     USBH_HUB_PortDis(p_hub_dev, port_nbr);
                     USBH_DevDisconn(p_dev);
@@ -1225,6 +1214,7 @@ static void USBH_HUB_EventProcess(void)
         /* ------------ PORT ENABLE STATUS CHANGE ------------- */
         if (DEF_BIT_IS_SET(port_status.wPortChange, USBH_HUB_STATUS_C_PORT_EN) == DEF_TRUE)
         {
+            LOG_INF("port enable status change");
             err = USBH_HUB_PortEnChngClr(p_hub_dev, port_nbr);
             if (err != USBH_ERR_NONE)
             {
@@ -1233,7 +1223,7 @@ static void USBH_HUB_EventProcess(void)
         }
         port_nbr++;
     }
-
+    LOG_WRN("retry urb");
     USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
 
     USBH_HUB_RefRel(p_hub_dev);
@@ -1334,9 +1324,7 @@ static USBH_ERR USBH_HUB_DescGet(USBH_HUB_DEV *p_hub_dev)
 
     if (p_hub_dev->Desc.bNbrPorts > USBH_CFG_MAX_HUB_PORTS)
     { /* Warns limit on hub port nbr to max cfg'd.            */
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        USBH_PRINT_LOG("Only ports [1..%d] are active.\r\n", USBH_CFG_MAX_HUB_PORTS);
-#endif
+        LOG_WRN("Only ports [1..%d] are active.\r\n", USBH_CFG_MAX_HUB_PORTS);
     }
 
     return (err);
@@ -1385,7 +1373,6 @@ static USBH_ERR USBH_HUB_PortsInit(USBH_HUB_DEV *p_hub_dev)
             USBH_PRINT_ERR(err);
             return (err);
         }
-        LOG_INF("DlyMS");
         USBH_OS_DlyMS(p_hub_dev->Desc.bPwrOn2PwrGood * 2u); /* See Note (1).                                       */
     }
     LOG_INF("PortsInit done");
@@ -1423,6 +1410,7 @@ static USBH_ERR USBH_HUB_PortStatusGet(USBH_HUB_DEV *p_hub_dev,
                                        CPU_INT16U port_nbr,
                                        USBH_HUB_PORT_STATUS *p_port_status)
 {
+    LOG_INF("HUB PortStatusGet");
     CPU_INT08U *p_buf;
     USBH_HUB_PORT_STATUS port_status;
     USBH_ERR err;
@@ -1440,6 +1428,7 @@ static USBH_ERR USBH_HUB_PortStatusGet(USBH_HUB_DEV *p_hub_dev,
                       &err);
     if (err != USBH_ERR_NONE)
     {
+        LOG_ERR("EP Reset");
         USBH_EP_Reset(p_hub_dev->DevPtr, (USBH_EP *)0);
     }
     else
@@ -1941,8 +1930,8 @@ static USBH_ERR USBH_HUB_RefAdd(USBH_HUB_DEV *p_hub_dev)
 
     CPU_CRITICAL_ENTER();
     p_hub_dev->RefCnt++; /* Increment access ref cnt to hub dev.                 */
-    CPU_CRITICAL_EXIT();
 
+    CPU_CRITICAL_EXIT();
     return (USBH_ERR_NONE);
 }
 
@@ -2029,6 +2018,7 @@ CPU_INT32U USBH_HUB_RH_CtrlReq(USBH_HC *p_hc,
                                CPU_INT32U buf_len,
                                USBH_ERR *p_err)
 {
+    LOG_INF("RH_CtrlRequest");
     CPU_INT32U len;
     USBH_HC_DRV *p_hc_drv;
     USBH_HC_RH_API *p_hc_rh_api;
@@ -2247,6 +2237,7 @@ void USBH_HUB_RH_Event(USBH_DEV *p_dev)
     p_rh_drv_api = p_hc_drv->RH_API_Ptr;
     if (p_hub_dev == (USBH_HUB_DEV *)0)
     {
+        LOG_INF("hub dev null");
         (void)p_rh_drv_api->IntDis(p_hc_drv);
         return;
     }
@@ -2269,7 +2260,6 @@ void USBH_HUB_RH_Event(USBH_DEV *p_dev)
     CPU_CRITICAL_EXIT();
     LOG_INF("SemPost");
     (void)USBH_OS_SemPost(&USBH_HUB_EventSem);
-    LOG_INF("SemPost done");
 }
 
 /*
@@ -2310,15 +2300,11 @@ void USBH_HUB_ClassNotify(void *p_class_dev,
     switch (state)
     { /* External hub has been identified.                    */
     case USBH_CLASS_DEV_STATE_CONN:
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        USBH_PRINT_LOG("Ext HUB (Addr# %i) connected\r\n", p_dev->DevAddr);
-#endif
+        LOG_WRN("Ext HUB (Addr# %i) connected\r\n", p_dev->DevAddr);
         break;
 
     case USBH_CLASS_DEV_STATE_DISCONN:
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        USBH_PRINT_LOG("Ext HUB (Addr# %i) disconnected\r\n", p_dev->DevAddr);
-#endif
+        LOG_WRN("Ext HUB (Addr# %i) disconnected\r\n", p_dev->DevAddr);
         break;
 
     default:
@@ -2387,7 +2373,7 @@ void USBH_HUB_FmtHubDesc(USBH_HUB_DESC *p_hub_desc,
     temp++;
     LOG_INF("FmtHubDesc %d", temp);
     USBH_HUB_DESC *p_buf_dest_desc;
-    CPU_INT08U i;
+    //CPU_INT08U i;
 
     p_buf_dest_desc = (USBH_HUB_DESC *)p_buf_dest;
 
@@ -2400,10 +2386,9 @@ void USBH_HUB_FmtHubDesc(USBH_HUB_DESC *p_hub_desc,
     p_buf_dest_desc->DeviceRemovable = p_hub_desc->DeviceRemovable;
 
     memcpy(&p_buf_dest_desc->bPwrOn2PwrGood, &p_hub_desc->bPwrOn2PwrGood, sizeof(uint8_t));
-
     memcpy(&p_buf_dest_desc->PortPwrCtrlMask[0], &p_hub_desc->PortPwrCtrlMask[0], (sizeof(uint32_t) * USBH_CFG_MAX_HUB_PORTS));
+
     // for (i = 0u; i < USBH_CFG_MAX_HUB_PORTS; i++) {
     //    // p_buf_dest_desc->PortPwrCtrlMask[i] = p_hub_desc->PortPwrCtrlMask[i];
     // }
-    LOG_INF("HubDesc done");
 }

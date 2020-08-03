@@ -1,13 +1,15 @@
 /*
 *********************************************************************************************************
-*                                            EXAMPLE CODE
+*                                             uC/USB-Host
+*                                     The Embedded USB Host Stack
 *
-*               This file is provided as an example on how to use Micrium products.
+*                    Copyright 2004-2020 Silicon Laboratories Inc. www.silabs.com
 *
-*               Please feel free to use any application code labeled as 'EXAMPLE CODE' in
-*               your application products.  Example code may be used as is, in whole or in
-*               part, or may be used as a reference only. This file can be modified as
-*               required to meet the end-product requirements.
+*                                 SPDX-License-Identifier: APACHE-2.0
+*
+*               This software is subject to an open source license and is distributed by
+*                Silicon Laboratories Inc. pursuant to the terms of the Apache License,
+*                    Version 2.0 available at www.apache.org/licenses/LICENSE-2.0.
 *
 *********************************************************************************************************
 */
@@ -15,97 +17,99 @@
 /*
 *********************************************************************************************************
 *
-*                                    USB HOST HID TEST APPLICATION
+*                                 HUMAN INTERFACE DEVICE CLASS PARSER
 *
-*                                              TEMPLATE
-*
-* Filename : app_usbh_hid.h
+* Filename : usbh_hidparser.h
 * Version  : V3.42.00
 *********************************************************************************************************
 */
 
 /*
 *********************************************************************************************************
-*                                                 MODULE
+*                                               MODULE
 *********************************************************************************************************
 */
 
-#ifndef  APP_USBH_HID_MODULE_PRESENT
-#define  APP_USBH_HID_MODULE_PRESENT
+#ifndef  USBH_HIDPARSER_MODULE_PRESENT
+#define  USBH_HIDPARSER_MODULE_PRESENT
 
 
 /*
 *********************************************************************************************************
-*                                              INCLUDE FILES
+*                                            INCLUDE FILES
 *********************************************************************************************************
 */
-
-#include  <usbh_hid.h>
-#include  <app_cfg.h>
-#include  "app_usbh_keyboard.h"
-#include  "app_usbh_mouse.h"
 
 
 /*
 *********************************************************************************************************
-*                                                 EXTERNS
+*                                               EXTERNS
 *********************************************************************************************************
 */
 
-#ifdef   APP_USBH_HID_MODULE
-#define  APP_USBH_HID_EXT
+#ifdef   USBH_HIDPARSER_MODULE
+#define  USBH_HIDPARSER_EXT
 #else
-#define  APP_USBH_HID_EXT  extern
+#define  USBH_HIDPARSER_EXT   extern
 #endif
 
 
 /*
 *********************************************************************************************************
-*                                                 DEFINES
+*                                               DEFINES
 *********************************************************************************************************
 */
 
 
 /*
 *********************************************************************************************************
-*                                               DATA TYPES
+*                                             DATA TYPES
 *********************************************************************************************************
 */
 
 
 /*
 *********************************************************************************************************
-*                                            GLOBAL VARIABLES
+*                                          GLOBAL VARIABLES
 *********************************************************************************************************
 */
 
 
 /*
 *********************************************************************************************************
-*                                                 MACROS
+*                                               MACROS
 *********************************************************************************************************
 */
 
 
 /*
 *********************************************************************************************************
-*                                           FUNCTION PROTOTYPES
+*                                         FUNCTION PROTOTYPES
 *********************************************************************************************************
 */
 
-USBH_ERR  App_USBH_HID_Init(void);
+USBH_ERR             USBH_HID_ParserGlobalInit(void);
+
+USBH_ERR             USBH_HID_ItemParser      (USBH_HID_DEV  *p_hid_dev,
+                                               CPU_INT08U    *p_report_desc,
+                                               CPU_INT32U     desc_len);
+
+USBH_ERR             USBH_HID_CreateReportID  (USBH_HID_DEV  *p_hid_dev);
+
+USBH_HID_REPORT_ID  *USBH_HID_MaxReport       (USBH_HID_DEV  *p_hid_dev,
+                                               CPU_INT08U     type);
 
 
 /*
 *********************************************************************************************************
-*                                          CONFIGURATION ERRORS
+*                                        CONFIGURATION ERRORS
 *********************************************************************************************************
 */
 
 
 /*
 *********************************************************************************************************
-*                                              MODULE END
+*                                             MODULE END
 *********************************************************************************************************
 */
 

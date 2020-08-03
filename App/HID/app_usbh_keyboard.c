@@ -269,9 +269,9 @@ static  void  App_USBH_KBD_PrintKeys (CPU_INT08U  *p_buf)
     if (App_USBH_KBD_NbrKeysNew == 1u) {                        /* If only one new key pressed, print character.        */
         App_USBH_KBD_KeyNewest = App_USBH_KBD_KeysNew[0u];
         if (App_USBH_KBD_Shift == DEF_TRUE) {
-            APP_TRACE_INFO(("%c", App_USBH_KBD_ShiftKey[App_USBH_KBD_HID_ToKBD[App_USBH_KBD_KeyNewest]]));
+            // APP_TRACE_INFO(("%c", App_USBH_KBD_ShiftKey[App_USBH_KBD_HID_ToKBD[App_USBH_KBD_KeyNewest]]));
         } else {
-            APP_TRACE_INFO(("%c", App_USBH_KBD_Key[App_USBH_KBD_HID_ToKBD[App_USBH_KBD_KeyNewest]]));
+            // APP_TRACE_INFO(("%c", App_USBH_KBD_Key[App_USBH_KBD_HID_ToKBD[App_USBH_KBD_KeyNewest]]));
         }
     } else {
         App_USBH_KBD_KeyNewest = 0x00u;

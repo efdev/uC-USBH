@@ -31,7 +31,7 @@
 */
 
 #define   APP_USBH_HID_MODULE
-#include  <Class/HID/usbh_hid.h>
+#include  <usbh_hid.h>
 #include  "app_usbh_hid.h"
 
 
@@ -171,12 +171,12 @@ static  void  App_USBH_HID_ClassDevNotify (void        *p_class_dev,
 
     switch (state) {
         case USBH_CLASS_DEV_STATE_CONN:                         /* ---------------- HID DEVICE CONN'D ----------------- */
-             APP_TRACE_INFO(("HID Demo: Device Connected\r\n"));
+             //APP_TRACE_INFO(("HID Demo: Device Connected\r\n"));
              App_USBH_HID_DevConn(p_hid_dev);
              break;
 
         case USBH_CLASS_DEV_STATE_DISCONN:                      /* ---------------- HID DEVICE REMOVED ---------------- */
-             APP_TRACE_INFO(("HID Demo: Device Removed\r\n"));
+             //APP_TRACE_INFO(("HID Demo: Device Removed\r\n"));
              App_USBH_HID_DevDisconn(p_hid_dev);
              break;
 
@@ -211,21 +211,21 @@ static  void  App_USBH_HID_DevConn (USBH_HID_DEV  *p_hid_dev)
 
     err = USBH_HID_RefAdd(p_hid_dev);                           /* Add ref                                              */
     if (err != USBH_ERR_NONE) {
-        APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
+        // APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
         return;
     }
 
     err = USBH_HID_IdleSet(p_hid_dev, 0u, 0u);                  /* Set Idle Time.                                       */
     if (err == USBH_ERR_EP_STALL) {
-        APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
+        // APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
     } else if (err != USBH_ERR_NONE) {
-        APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
+        // APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
         return;
     }
 
     err = USBH_HID_Init(p_hid_dev);                             /* Initialize HID                                       */
     if (err != USBH_ERR_NONE) {
-        APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
+        // APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
         return;
     }
 
@@ -233,7 +233,7 @@ static  void  App_USBH_HID_DevConn (USBH_HID_DEV  *p_hid_dev)
                                    &p_report_id_array,
                                    &nbr_report_id);
     if (err != USBH_ERR_NONE) {
-        APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
+        // APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
         return;
     }
 
@@ -246,7 +246,7 @@ static  void  App_USBH_HID_DevConn (USBH_HID_DEV  *p_hid_dev)
 
         if (p_hid_dev->Usage == USBH_HID_APP_USAGE_KBD) {
 
-            APP_TRACE_INFO(("HID Demo: Keyboard Connected\r\n"));
+            // APP_TRACE_INFO(("HID Demo: Keyboard Connected\r\n"));
 
             err = USBH_HID_RegRxCB(                    p_hid_dev,
                                                        p_report_id->ReportID,
@@ -255,7 +255,7 @@ static  void  App_USBH_HID_DevConn (USBH_HID_DEV  *p_hid_dev)
 
          } else if (p_hid_dev->Usage == USBH_HID_APP_USAGE_MOUSE) {
 
-             APP_TRACE_INFO(("HID Demo: Mouse Connected\r\n"));
+            //  APP_TRACE_INFO(("HID Demo: Mouse Connected\r\n"));
 
              err = USBH_HID_RegRxCB(                    p_hid_dev,
                                                         p_report_id->ReportID,
@@ -265,7 +265,7 @@ static  void  App_USBH_HID_DevConn (USBH_HID_DEV  *p_hid_dev)
     }
 
     if (err != USBH_ERR_NONE) {
-        APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
+        // APP_TRACE_INFO(("Error in App_USBH_HID_DevConn(): %d\r\n", err));
     }
 }
 

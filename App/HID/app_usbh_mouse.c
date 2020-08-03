@@ -173,11 +173,11 @@ static  void  App_USBH_MouseDisplayData (CPU_INT08S  *p_buf)
 
     if ((pressed      == DEF_TRUE) &&
         (pressed_prev == DEF_FALSE)) {
-        APP_TRACE_INFO(("Left   button pressed\r\n"));
+        // APP_TRACE_INFO(("Left   button pressed\r\n"));
     }
     if ((pressed      == DEF_FALSE) &&
         (pressed_prev == DEF_TRUE)) {
-        APP_TRACE_INFO(("Left   button released\r\n"));
+        // APP_TRACE_INFO(("Left   button released\r\n"));
     }
 
     pressed      = (state                   & MOUSE_BUTTON_3) == MOUSE_BUTTON_3 ? DEF_TRUE : DEF_FALSE;
@@ -185,11 +185,11 @@ static  void  App_USBH_MouseDisplayData (CPU_INT08S  *p_buf)
 
     if ((pressed      == DEF_TRUE) &&
         (pressed_prev == DEF_FALSE)) {
-        APP_TRACE_INFO(("Middle button pressed\r\n"));
+        // APP_TRACE_INFO(("Middle button pressed\r\n"));
     }
     if ((pressed      == DEF_FALSE) &&
         (pressed_prev == DEF_TRUE)) {
-        APP_TRACE_INFO(("Middle button released\r\n"));
+        // APP_TRACE_INFO(("Middle button released\r\n"));
     }
 
     pressed      = (state                   & MOUSE_BUTTON_2) == MOUSE_BUTTON_2 ? DEF_TRUE : DEF_FALSE;
@@ -197,11 +197,11 @@ static  void  App_USBH_MouseDisplayData (CPU_INT08S  *p_buf)
 
     if ((pressed      == DEF_TRUE) &&
         (pressed_prev == DEF_FALSE)) {
-        APP_TRACE_INFO(("Right  button pressed\r\n"));
+        // APP_TRACE_INFO(("Right  button pressed\r\n"));
     }
     if ((pressed      == DEF_FALSE) &&
         (pressed_prev == DEF_TRUE)) {
-        APP_TRACE_INFO(("Right  button released\r\n"));
+        // APP_TRACE_INFO(("Right  button released\r\n"));
     }
 
     App_USBH_MouseStatePrev = state;
@@ -211,9 +211,9 @@ static  void  App_USBH_MouseDisplayData (CPU_INT08S  *p_buf)
         App_USBH_MousePosX += p_buf[1u];
         App_USBH_MousePosY += p_buf[2u];
 
-        APP_TRACE_INFO(("Pointer at (x, y) = (%d, %d)\r\n",
-                        App_USBH_MousePosX,
-                        App_USBH_MousePosY));
+        // APP_TRACE_INFO(("Pointer at (x, y) = (%d, %d)\r\n",
+        //                 App_USBH_MousePosX,
+        //                 App_USBH_MousePosY));
     }
 }
 

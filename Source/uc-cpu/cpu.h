@@ -32,35 +32,24 @@ typedef k_thread_stack_t CPU_STK;
 #define DEF_ENABLED 1
 #define DEF_DISABLED 0
 
-#define CPU_CRITICAL_ENTER()
+#define CPU_CRITICAL_ENTER() key = irq_lock()
+#define CPU_CRITICAL_EXIT() irq_unlock(key);
+#define CPU_SR_ALLOC() int key
+
+// #define CPU_CRITICAL_ENTER()
+// #define CPU_CRITICAL_EXIT()
+// #define CPU_SR_ALLOC()
+
 #define CPU_INT_EN()
 #define CPU_INT_DIS()
-#define CPU_CRITICAL_EXIT()
-#define CPU_SR_ALLOC()
-
-/* Define  CPU         word sizes (see Note #1) :       */
 #define CPU_CFG_ADDR_SIZE CPU_WORD_SIZE_32     /* Defines CPU address word size  (in octets).          */
 #define CPU_CFG_DATA_SIZE CPU_WORD_SIZE_32     /* Defines CPU data    word size  (in octets).          */
-#define CPU_CFG_DATA_SIZE_MAX CPU_WORD_SIZE_64 /* Defines CPU maximum word size  (in octets).          */
+#define CPU_CFG_DATA_SIZE_MAX CPU_WORD_SIZE_32 /* Defines CPU maximum word size  (in octets).          */
 
-#define CPU_CFG_ENDIAN_TYPE CPU_ENDIAN_TYPE_LITTLE /* Defines CPU data    word-memory order (see Note #2). */
+#define CPU_CFG_ENDIAN_TYPE CPU_ENDIAN_TYPE_LITTLE
 
-#if (CPU_CFG_ADDR_SIZE == CPU_WORD_SIZE_32)
 typedef CPU_INT32U CPU_ADDR;
-#elif (CPU_CFG_ADDR_SIZE == CPU_WORD_SIZE_16)
-typedef CPU_INT16U CPU_ADDR;
-#else
-typedef CPU_INT08U CPU_ADDR;
-#endif
-
-/* CPU data    type based on data    bus size.          */
-#if (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_32)
 typedef CPU_INT32U CPU_DATA;
-#elif (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_16)
-typedef CPU_INT16U CPU_DATA;
-#else
-typedef CPU_INT08U CPU_DATA;
-#endif
 
 typedef CPU_DATA CPU_ALIGN;  /* Defines CPU data-word-alignment size.                */
 typedef CPU_ADDR CPU_SIZE_T; /* Defines CPU standard 'size_t'   size.                */
