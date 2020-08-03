@@ -43,7 +43,7 @@ LOG_MODULE_REGISTER(usbh_core, 4);
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
-K_THREAD_STACK_DEFINE(USBH_AsyncTask_Stack, 512);
+K_THREAD_STACK_DEFINE(USBH_AsyncTask_Stack, 1024);
 K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 1024);
 
 /*
@@ -386,10 +386,6 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 		return (err);
 	}
 
-	// err = k_sem_init(&USBH_URB_Sem, 0, 1);
-	// if(err == EINVAL){
-	//     return USBH_ERR_ALLOC;
-	// }
 	err = USBH_OS_SemCreate((USBH_HSEM *)&USBH_URB_Sem, /* Create a Semaphore for sync I/O req.                 */
 							0u);
 	if (err != USBH_ERR_NONE)
@@ -403,7 +399,6 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 						K_THREAD_STACK_SIZEOF(USBH_AsyncTask_Stack),
 						USBH_AsyncTask, NULL, NULL, NULL,
 						0, 0, K_NO_WAIT);
-
 
 	/* Create a task for processing hub events.             */
 	k_tid_t USBH_HUB_Event_Tid =
@@ -1001,24 +996,8 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 		return (err);
 	}
 
-		LOG_INF("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
-					   p_dev->DevAddr);
-	// #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-	// 	/* -------- PRINT MANUFACTURER AND PRODUCT STR -------- */
-	// 	if (p_dev->DevDesc[14] !=
-	// 		0u)
-	// 	{ /* iManufacturer = 0 -> no str desc for manufacturer.   */
-	// 		USBH_StrDescPrint(p_dev, (CPU_INT08U *)"Manufacturer : ",
-	// 						  p_dev->DevDesc[14]);
-	// 	}
-
-	// 	if (p_dev->DevDesc[15] !=
-	// 		0u)
-	// 	{ /* iProduct = 0 -> no str desc for product.             */
-	// 		USBH_StrDescPrint(p_dev, (CPU_INT08U *)"Product      : ",
-	// 						  p_dev->DevDesc[15]);
-	// 	}
-	// #endif
+	LOG_ERR("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
+			p_dev->DevAddr);
 
 	nbr_cfgs = USBH_DevCfgNbrGet(
 		p_dev); /* ---------- GET NBR OF CFG PRESENT IN DEV ----------- */
@@ -1048,7 +1027,7 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 	LOG_DBG("Call ClassDrvConn");
 	err = USBH_ClassDrvConn(
 		p_dev); /* ------------- PROBE/LOAD CLASS DRV(S) -------------- */
-	
+
 	LOG_DBG("DevConn done");
 	return (err);
 }
@@ -1168,7 +1147,6 @@ void USBH_DevDescGet(USBH_DEV *p_dev, USBH_DEV_DESC *p_dev_desc)
 USBH_ERR USBH_CfgSet(USBH_DEV *p_dev, CPU_INT08U cfg_nbr)
 {
 	USBH_ERR err;
-
 	USBH_SET_CFG(
 		p_dev, cfg_nbr,
 		&err); /* See Note (1).                                        */
@@ -1177,6 +1155,7 @@ USBH_ERR USBH_CfgSet(USBH_DEV *p_dev, CPU_INT08U cfg_nbr)
 	{
 		p_dev->SelCfg = cfg_nbr;
 	}
+	LOG_INF("set configuration %d ret %d", cfg_nbr, err);
 
 	return (err);
 }
@@ -3193,7 +3172,7 @@ USBH_ERR USBH_EP_Reset(USBH_DEV *p_dev, USBH_EP *p_ep)
 
 USBH_ERR USBH_EP_Close(USBH_EP *p_ep)
 {
-	LOG_INF("EP Close");
+	LOG_ERR("core EP Close");
 	USBH_ERR err;
 	USBH_DEV *p_dev;
 	USBH_URB *p_async_urb;
@@ -3229,6 +3208,7 @@ USBH_ERR USBH_EP_Close(USBH_EP *p_ep)
 		   DEF_TRUE) && /* Close EP on HC.                                      */
 		  (p_dev->HC_Ptr->IsVirRootHub == DEF_TRUE)))
 	{
+		LOG_INF("close address %d", ((p_ep->DevAddr << 8u) | p_ep->Desc.bEndpointAddress));
 		USBH_HCD_EP_Close(p_ep->DevPtr->HC_Ptr, p_ep, &err);
 	}
 

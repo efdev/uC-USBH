@@ -646,7 +646,6 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 	p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
 	p_bsp_api = p_hc_drv->BSP_API_Ptr;
 
-	LOG_INF("bsp init");
 	if (p_bsp_api->Init != (void *)0)
 	{
 		p_bsp_api->Init(p_hc_drv, p_err);
@@ -656,16 +655,12 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 			return;
 		}
 	}
-	LOG_INF("syncbusy");
 	if (!(p_reg->SYNCBUSY &
 		  USBH_ATSAMX_SYNCBUSY_SWRST))
 	{ /* Check if synchronization is completed                */
 		USBH_ATSAMX_CTRLA_READ(p_reg, reg_val);
-		LOG_INF("ctrla enable");
 		if (reg_val & USBH_ATSAMX_CTRLA_ENABLE)
 		{
-			LOG_INF("disable peripheral");
-
 			reg_val &= ~USBH_ATSAMX_CTRLA_ENABLE;
 			USBH_ATSAMX_CTRLA_WRITE(
 				p_reg,
@@ -676,12 +671,9 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 		/* Resets all regs in the USB to initial state, and ..  */
 		/* .. the USB will be disabled   
                                */
-		LOG_INF("write to ctrla register");
-
 		USBH_ATSAMX_CTRLA_WRITE(p_reg, USBH_ATSAMX_CTRLA_SWRST);
 	}
 
-	LOG_INF("wait for sync");
 	USBH_ATSAMX_WAIT_FOR_SYNC(p_reg, USBH_ATSAMX_SYNCBUSY_SWRST)
 
 	/* -- LOAD PAD CALIBRATION REG WITH PRODUCTION VALUES-- */
@@ -704,7 +696,6 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 		pad_trim =
 			6u; /* Default value                                        */
 	}
-	LOG_INF("ctrla write host mode");
 
 	p_reg->PADCAL =
 		((pad_transp << 0u) | (pad_transn << 6) | (pad_trim << 12u));
@@ -1033,7 +1024,7 @@ static void USBH_ATSAMX_HCD_EP_Close(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 	p_ep->DataPID =
 		0u; /* Set PID to DATA0                                      */
 	*p_err = USBH_ERR_NONE;
-	LOG_ERR("ep cloce pipe nbr %2x", pipe_nbr);
+	LOG_ERR("ep close pipe nbr %2x", pipe_nbr);
 
 	if (p_ep->URB.DMA_BufPtr != (void *)0u)
 	{
@@ -1115,7 +1106,6 @@ static void USBH_ATSAMX_HCD_EP_Abort(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 static CPU_BOOLEAN USBH_ATSAMX_HCD_IsHalt_EP(USBH_HC_DRV *p_hc_drv,
 											 USBH_EP *p_ep, USBH_ERR *p_err)
 {
-	LOG_WRN("halt state");
 	(void)p_hc_drv;
 
 	*p_err = USBH_ERR_NONE;
@@ -1151,7 +1141,6 @@ static CPU_BOOLEAN USBH_ATSAMX_HCD_IsHalt_EP(USBH_HC_DRV *p_hc_drv,
 static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 									   USBH_ERR *p_err)
 {
-	LOG_WRN("urb submit");
 	USBH_ATSAMX_REG *p_reg;
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U ep_type;
@@ -1175,7 +1164,8 @@ static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 		*p_err = USBH_ERR_EP_ALLOC;
 		return;
 	}
-
+	LOG_ERR("pipe %d set ep adress %d", pipe_nbr,((p_urb->EP_Ptr->DevAddr << 8u) |
+								 p_urb->EP_Ptr->Desc.bEndpointAddress));
 	p_drv_data->PipeTbl[pipe_nbr].EP_Addr =
 		((p_urb->EP_Ptr->DevAddr << 8u) |
 		 p_urb->EP_Ptr->Desc.bEndpointAddress);
@@ -1291,7 +1281,6 @@ static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 static void USBH_ATSAMX_HCD_URB_Complete(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 										 USBH_ERR *p_err)
 {
-	LOG_WRN("urb complete");
 	USBH_ATSAMX_REG *p_reg;
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U pipe_nbr;
@@ -1303,7 +1292,6 @@ static void USBH_ATSAMX_HCD_URB_Complete(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 	p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
 	p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
 	pipe_nbr = USBH_ATSAMX_GetPipeNbr(p_drv_data, p_urb->EP_Ptr);
-	LOG_ERR("urb complete nbr %2x", pipe_nbr);
 
 	CPU_CRITICAL_ENTER();
 	xfer_len = USBH_ATSAMX_GET_BYTE_CNT(
@@ -1449,7 +1437,6 @@ USBH_ATSAMX_HCD_PortStatusGet(USBH_HC_DRV *p_hc_drv, CPU_INT08U port_nbr,
 	if (reg_val ==
 		USBH_ATSAMX_STATUS_SPEED_FS)
 	{ /* ------------- FULL-SPEED DEVICE ATTACHED ----------- */
-		LOG_INF("full speed");
 		p_drv_data->RH_PortStat &=
 			~USBH_HUB_STATUS_PORT_LOW_SPD; /* PORT_LOW_SPEED  = 0 = FS dev attached.        */
 		p_drv_data->RH_PortStat &=
@@ -1458,7 +1445,6 @@ USBH_ATSAMX_HCD_PortStatusGet(USBH_HC_DRV *p_hc_drv, CPU_INT08U port_nbr,
 	else if (reg_val ==
 			 USBH_ATSAMX_STATUS_SPEED_LS)
 	{ /* ------------- LOW-SPEED DEVICE ATTACHED ------------ */
-		LOG_INF("low speed");
 		p_drv_data->RH_PortStat |=
 			USBH_HUB_STATUS_PORT_LOW_SPD; /* PORT_LOW_SPEED  = 1 = LS dev attached.        */
 		p_drv_data->RH_PortStat &=
@@ -1905,7 +1891,6 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	}
 	else if (int_stat & USBH_ATSAMX_INT_DDISC)
 	{
-		// printk("disconnect\n");
 		LOG_WRN("disconnect usb");
 
 		/* Clear device disconnect/connect interrupt flags      */
@@ -1931,7 +1916,6 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	}
 	else if (int_stat & USBH_ATSAMX_INT_DCONN)
 	{
-		// printk("connect\n");
 		LOG_WRN("connect usb");
 
 		p_reg->INTENCLR =
@@ -2327,11 +2311,11 @@ static CPU_INT08U USBH_ATSAMX_GetFreePipe(USBH_DRV_DATA *p_drv_data)
 		if (DEF_BIT_IS_CLR(p_drv_data->PipeUsed, DEF_BIT(pipe_nbr)))
 		{
 			DEF_BIT_SET(p_drv_data->PipeUsed, DEF_BIT(pipe_nbr));
-			LOG_WRN("valid pipe %d", pipe_nbr);
+			LOG_WRN("valid free pipe %d", pipe_nbr);
 			return (pipe_nbr);
 		}
 	}
-	LOG_ERR("invalid pipe");
+	LOG_ERR("invalid free pipe");
 	return ATSAMX_INVALID_PIPE;
 }
 
@@ -2362,6 +2346,7 @@ static CPU_INT08U USBH_ATSAMX_GetPipeNbr(USBH_DRV_DATA *p_drv_data,
 
 	for (pipe_nbr = 0u; pipe_nbr < ATSAMX_MAX_NBR_PIPE; pipe_nbr++)
 	{
+		LOG_INF("ep address %d %d", p_drv_data->PipeTbl[pipe_nbr].EP_Addr, ep_addr);
 		if (p_drv_data->PipeTbl[pipe_nbr].EP_Addr == ep_addr)
 		{
 			return (pipe_nbr);

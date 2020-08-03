@@ -35,7 +35,7 @@
 #include "usbh_class.h"
 
 #include <logging/log.h>
-LOG_MODULE_REGISTER(usbh_class, 2);
+LOG_MODULE_REGISTER(usbh_class);
 /*
 *********************************************************************************************************
 *                                            LOCAL DEFINES
@@ -394,9 +394,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
              (err != USBH_ERR_CLASS_PROBE_FAIL))
     {
 
-        // #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        //         USBH_PRINT_LOG("ERROR: Probe class driver. #%d\r\n", err);
-        // #endif
+        LOG_ERR("ERROR: Probe class driver. #%d\r\n", err);
     }
     else
     {
@@ -432,9 +430,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
         }
         else if (err != USBH_ERR_CLASS_DRV_NOT_FOUND)
         {
-            // #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-            //             USBH_PRINT_LOG("ERROR: Probe class driver. #%d\r\n", err);
-            // #endif
+            LOG_ERR("ERROR: Probe class driver. #%d\r\n", err);
         }
         else
         {
@@ -443,9 +439,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     }
     if (drv_found == DEF_FALSE)
     {
-        // #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-        //         USBH_PRINT_LOG("No Class Driver Found.\r\n");
-        // #endif
+        LOG_ERR("No Class Driver Found.\r\n");
         return (err);
     }
 

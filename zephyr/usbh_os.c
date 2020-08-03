@@ -170,7 +170,7 @@ void *USBH_OS_BusToVir(void *x)
 
 void USBH_OS_DlyMS(CPU_INT32U dly)
 {
-	//k_busy_wait((dly*1000));
+	// k_busy_wait((dly*1000));
 	k_sleep(K_MSEC(dly));
 }
 
@@ -190,7 +190,7 @@ void USBH_OS_DlyMS(CPU_INT32U dly)
 
 void USBH_OS_DlyUS(CPU_INT32U dly)
 {
-	//k_busy_wait(dly);
+	// k_busy_wait(dly);
 	k_sleep(K_USEC(dly));
 }
 
@@ -439,7 +439,7 @@ USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM *sem)
 
 USBH_ERR USBH_OS_SemPost(USBH_HSEM *sem)
 {
-	//LOG_INF("SemPost %d", sem);
+	// LOG_INF("SemPost %d", sem);
 	//k_sem_reset(sem);
 	k_sem_give(sem);
 	return (USBH_ERR_NONE);
