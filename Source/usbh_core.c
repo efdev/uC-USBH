@@ -44,7 +44,7 @@ LOG_MODULE_REGISTER(usbh_core, 4);
 *********************************************************************************************************
 */
 K_THREAD_STACK_DEFINE(USBH_AsyncTask_Stack, 1024);
-K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 1024);
+K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 2048);
 
 /*
 *********************************************************************************************************
