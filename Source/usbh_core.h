@@ -40,9 +40,9 @@
 *********************************************************************************************************
 */
 
-#include  <cpu.h>
-#include  <lib_def.h>
-#include  <lib_mem.h>
+#include  <usbh_cpu.h>
+// #include  <lib_def.h>
+// #include  <lib_mem.h>
 #include  <usbh_cfg.h>
 #include  "usbh_err.h"
 #include  "usbh_os.h"

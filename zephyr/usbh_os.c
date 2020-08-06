@@ -614,3 +614,128 @@ void USBH_OS_MsgQueueGet(USBH_HQUEUE *msg_q, CPU_INT32U timeout,
 
 	*p_err = err;
 }
+
+// /*
+// *********************************************************************************************************
+// *                                         CPU_CntTrailZeros()
+// *
+// * Description : Count the number of contiguous, least-significant, trailing zero bits in a data value.
+// *
+// * Argument(s) : val         Data value to count trailing zero bits.
+// *
+// * Return(s)   : Number of contiguous, least-significant, trailing zero bits in 'val'.
+// *
+// * Note(s)     : (1) (a) Supports the following data value sizes :
+// *
+// *                       (1)  8-bits
+// *                       (2) 16-bits
+// *                       (3) 32-bits
+// *                       (4) 64-bits
+// *
+// *                       See also 'cpu_def.h  CPU WORD CONFIGURATION  Note #1'.
+// *
+// *                   (b) (1) For  8-bit values :
+// *
+// *                                  b07  b06  b05  b04  b03  b02  b01  b00    # Trailing Zeros
+// *                                  ---  ---  ---  ---  ---  ---  ---  ---    ----------------
+// *                                   x    x    x    x    x    x    x    1            0
+// *                                   x    x    x    x    x    x    1    0            1
+// *                                   x    x    x    x    x    1    0    0            2
+// *                                   x    x    x    x    1    0    0    0            3
+// *                                   x    x    x    1    0    0    0    0            4
+// *                                   x    x    1    0    0    0    0    0            5
+// *                                   x    1    0    0    0    0    0    0            6
+// *                                   1    0    0    0    0    0    0    0            7
+// *                                   0    0    0    0    0    0    0    0            8
+// *
+// *
+// *                       (2) For 16-bit values :
+// *
+// *                             b15  b14  b13  b12  b11  ...  b02  b01  b00    # Trailing Zeros
+// *                             ---  ---  ---  ---  ---       ---  ---  ---    ----------------
+// *                              x    x    x    x    x         x    x    1            0
+// *                              x    x    x    x    x         x    1    0            1
+// *                              x    x    x    x    x         1    0    0            2
+// *                              :    :    :    :    :         :    :    :            :
+// *                              :    :    :    :    :         :    :    :            :
+// *                              x    x    x    x    1         0    0    0           11
+// *                              x    x    x    1    0         0    0    0           12
+// *                              x    x    1    0    0         0    0    0           13
+// *                              x    1    0    0    0         0    0    0           14
+// *                              1    0    0    0    0         0    0    0           15
+// *                              0    0    0    0    0         0    0    0           16
+// *
+// *
+// *                       (3) For 32-bit values :
+// *
+// *                             b31  b30  b29  b28  b27  ...  b02  b01  b00    # Trailing Zeros
+// *                             ---  ---  ---  ---  ---       ---  ---  ---    ----------------
+// *                              x    x    x    x    x         x    x    1            0
+// *                              x    x    x    x    x         x    1    0            1
+// *                              x    x    x    x    x         1    0    0            2
+// *                              :    :    :    :    :         :    :    :            :
+// *                              :    :    :    :    :         :    :    :            :
+// *                              x    x    x    x    1         0    0    0           27
+// *                              x    x    x    1    0         0    0    0           28
+// *                              x    x    1    0    0         0    0    0           29
+// *                              x    1    0    0    0         0    0    0           30
+// *                              1    0    0    0    0         0    0    0           31
+// *                              0    0    0    0    0         0    0    0           32
+// *
+// *
+// *                       (4) For 64-bit values :
+// *
+// *                             b63  b62  b61  b60  b59  ...  b02  b01  b00    # Trailing Zeros
+// *                             ---  ---  ---  ---  ---       ---  ---  ---    ----------------
+// *                              x    x    x    x    x         x    x    1            0
+// *                              x    x    x    x    x         x    1    0            1
+// *                              x    x    x    x    x         1    0    0            2
+// *                              :    :    :    :    :         :    :    :            :
+// *                              :    :    :    :    :         :    :    :            :
+// *                              x    x    x    x    1         0    0    0           59
+// *                              x    x    x    1    0         0    0    0           60
+// *                              x    x    1    0    0         0    0    0           61
+// *                              x    1    0    0    0         0    0    0           62
+// *                              1    0    0    0    0         0    0    0           63
+// *                              0    0    0    0    0         0    0    0           64
+// *
+// *               (2) For non-zero values, the returned number of contiguous, least-significant, trailing
+// *                   zero bits is also equivalent to the bit position of the least-significant set bit.
+// *
+// *               (3) 'val' SHOULD be validated for non-'0' PRIOR to all other counting zero calculations :
+// *
+// *                   (a) CPU_CntTrailZeros()'s final conditional statement calculates 'val's number of
+// *                       trailing zeros based on its return data size, 'CPU_CFG_DATA_SIZE', & 'val's
+// *                       calculated number of lead zeros ONLY if the initial 'val' is non-'0' :
+// *
+// *                           if (val != 0u) {
+// *                               nbr_trail_zeros = ((CPU_CFG_DATA_SIZE * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros;
+// *                           } else {
+// *                               nbr_trail_zeros = nbr_lead_zeros;
+// *                           }
+// *
+// *                       Therefore, initially validating all non-'0' values avoids having to conditionally
+// *                       execute the final 'if' statement.
+// *********************************************************************************************************
+// */
+
+// CPU_DATA CPU_CntTrailZeros(CPU_DATA val)
+// {
+// 	CPU_DATA val_bit_mask;
+// 	CPU_DATA nbr_lead_zeros;
+// 	CPU_DATA nbr_trail_zeros;
+
+// 	if (val == 0u)
+// 	{ /* Rtn ALL val bits as zero'd (see Note #3).            */
+// 		return ((CPU_DATA)(CPU_CFG_DATA_SIZE * DEF_OCTET_NBR_BITS));
+// 	}
+
+// 	val_bit_mask = val & ((CPU_DATA)~val + 1u);		 /* Zero/clr all bits EXCEPT least-sig set bit.          */
+// 	nbr_lead_zeros = CPU_CntLeadZeros(val_bit_mask); /* Cnt  nbr lead  0s.                                   */
+// 													 /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
+// 	nbr_trail_zeros = ((CPU_DATA)((CPU_CFG_DATA_SIZE * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros);
+
+// 	return (nbr_trail_zeros);
+// }
+
+

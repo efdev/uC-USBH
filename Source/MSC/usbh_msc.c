@@ -49,6 +49,7 @@ LOG_MODULE_REGISTER(msc);
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
+K_MEM_POOL_DEFINE(USBH_MSC_DevPool, sizeof(USBH_MSC_DEV), sizeof(USBH_MSC_DEV), USBH_MSC_CFG_MAX_DEV, sizeof(CPU_ALIGN));
 
 #define USBH_MSC_SIG_CBW 0x43425355u
 #define USBH_MSC_SIG_CSW 0x53425355u
@@ -578,7 +579,7 @@ typedef struct usbh_msc_csw
 */
 
 static USBH_MSC_DEV USBH_MSC_DevArr[USBH_MSC_CFG_MAX_DEV];
-static MEM_POOL USBH_MSC_DevPool;
+// static MEM_POOL USBH_MSC_DevPool;
 
 /*
 *********************************************************************************************************
@@ -1083,9 +1084,9 @@ USBH_ERR USBH_MSC_CapacityRd(USBH_MSC_DEV *p_msc_dev,
     USBH_ERR err;
 
     /* ------------------- VALIDATE PTR ------------------- */
-    if ((p_msc_dev == (USBH_MSC_DEV *)0) ||
-        (p_nbr_blks == (CPU_INT32U *)0) ||
-        (p_blk_size == (CPU_INT32U *)0))
+    if ((p_msc_dev == NULL) ||
+        (p_nbr_blks == NULL) ||
+        (p_blk_size == NULL))
     {
         err = USBH_ERR_INVALID_ARG;
         return (err);
@@ -1258,7 +1259,7 @@ USBH_ERR USBH_MSC_RefAdd(USBH_MSC_DEV *p_msc_dev)
 USBH_ERR USBH_MSC_RefRel(USBH_MSC_DEV *p_msc_dev)
 {
     USBH_ERR err;
-    LIB_ERR err_lib;
+    // LIB_ERR err_lib;
 
     /* ------------------- VALIDATE PTR ------------------- */
     if (p_msc_dev == (USBH_MSC_DEV *)0)
@@ -1498,8 +1499,8 @@ static void USBH_MSC_GlobalInit(USBH_ERR *p_err)
 {
 
     CPU_INT08U ix;
-    CPU_SIZE_T octets_reqd;
-    LIB_ERR err_lib;
+    // CPU_SIZE_T octets_reqd;
+    // LIB_ERR err_lib;
 
     /* --------------- INIT MSC DEV STRUCT ---------------- */
     for (ix = 0u; ix < USBH_MSC_CFG_MAX_DEV; ix++)
@@ -1507,24 +1508,23 @@ static void USBH_MSC_GlobalInit(USBH_ERR *p_err)
         USBH_MSC_DevClr(&USBH_MSC_DevArr[ix]);
         USBH_OS_MutexCreate(&USBH_MSC_DevArr[ix].HMutex);
     }
-
-    Mem_PoolCreate(&USBH_MSC_DevPool, /* POOL for managing MSC dev struct.                    */
-                   (void *)USBH_MSC_DevArr,
-                   (sizeof(USBH_MSC_DEV) * USBH_MSC_CFG_MAX_DEV),
-                   USBH_MSC_CFG_MAX_DEV,
-                   sizeof(USBH_MSC_DEV),
-                   sizeof(CPU_ALIGN),
-                   &octets_reqd,
-                   &err_lib);
-    if (err_lib != LIB_MEM_ERR_NONE)
-    {
-        LOG_ERR("%d octets required\r\n", octets_reqd);
-        *p_err = USBH_ERR_ALLOC;
-    }
-    else
-    {
-        *p_err = USBH_ERR_NONE;
-    }
+    // Mem_PoolCreate(&USBH_MSC_DevPool, /* POOL for managing MSC dev struct.                    */
+    //                (void *)USBH_MSC_DevArr,
+    //                (sizeof(USBH_MSC_DEV) * USBH_MSC_CFG_MAX_DEV),
+    //                USBH_MSC_CFG_MAX_DEV,
+    //                sizeof(USBH_MSC_DEV),
+    //                sizeof(CPU_ALIGN),
+    //                &octets_reqd,
+    //                &err_lib);
+    // if (err_lib != LIB_MEM_ERR_NONE)
+    // {
+    //     LOG_ERR("%d octets required\r\n", octets_reqd);
+    //     *p_err = USBH_ERR_ALLOC;
+    // }
+    // else
+    // {
+    //     *p_err = USBH_ERR_NONE;
+    // }
 }
 
 /*
@@ -1565,7 +1565,7 @@ static void *USBH_MSC_ProbeIF(USBH_DEV *p_dev,
 {
     USBH_IF_DESC p_if_desc;
     USBH_MSC_DEV *p_msc_dev;
-    LIB_ERR err_lib;
+    // LIB_ERR err_lib;
 
     p_msc_dev = (USBH_MSC_DEV *)0;
     *p_err = USBH_IF_DescGet(p_if, 0u, &p_if_desc);
@@ -1584,11 +1584,11 @@ static void *USBH_MSC_ProbeIF(USBH_DEV *p_dev,
         p_msc_dev = (USBH_MSC_DEV *)Mem_PoolBlkGet(&USBH_MSC_DevPool,
                                                    sizeof(USBH_MSC_DEV),
                                                    &err_lib);
-        if (err_lib != LIB_MEM_ERR_NONE)
-        {
-            *p_err = USBH_ERR_DEV_ALLOC;
-            return ((void *)0);
-        }
+        // if (err_lib != LIB_MEM_ERR_NONE)
+        // {
+        //     *p_err = USBH_ERR_DEV_ALLOC;
+        //     return ((void *)0);
+        // }
 
         USBH_MSC_DevClr(p_msc_dev);
         p_msc_dev->RefCnt = (CPU_INT08U)0;
@@ -1633,7 +1633,7 @@ static void *USBH_MSC_ProbeIF(USBH_DEV *p_dev,
 
 static void USBH_MSC_Disconn(void *p_class_dev)
 {
-    LIB_ERR err_lib;
+    // LIB_ERR err_lib;
     USBH_MSC_DEV *p_msc_dev;
 
     p_msc_dev = (USBH_MSC_DEV *)p_class_dev;

@@ -628,7 +628,8 @@ static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
 
     err = USBH_ERR_CLASS_DRV_NOT_FOUND;
     for (ix = 0u; ix < USBH_CFG_MAX_NBR_CLASS_DRVS; ix++)
-    { /* Search drv list for matching IF class.               */
+    { /* Search drv list for matching IF class.  
+                 */
         if (USBH_ClassDrvList[ix].InUse != 0u)
         {
             p_class_drv = USBH_ClassDrvList[ix].ClassDrvPtr;

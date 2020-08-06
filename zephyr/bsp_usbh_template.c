@@ -33,8 +33,8 @@
 */
 
 #include "bsp_usbh_template.h"
-#include <cpu.h>
-#include <lib_def.h>
+#include <usbh_cpu.h>
+// #include <lib_def.h>
 
 #include <soc.h>
 #include <drivers/pinmux.h>
@@ -88,7 +88,7 @@ static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
 
 static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err);
 
-static void BSP_USBH_Template_IntHandler(void);
+// static void BSP_USBH_Template_IntHandler(void);
 
 /*
 *********************************************************************************************************
@@ -181,14 +181,6 @@ static void BSP_USBH_Template_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err)
 static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
 										   USBH_ERR *p_err)
 {
-	// do
-	// {
-	// 	IRQ_CONNECT(DT_INST_IRQ_BY_IDX(0, 0, irq),
-	// 				DT_INST_IRQ_BY_IDX(0, 0, priority),
-	// 				isr_fnct, 0, 0);
-	// 	irq_enable(DT_INST_IRQ_BY_IDX(0, 0, irq));
-	// } while (0);
-
 	*p_err = USBH_ERR_NONE;
 }
 
@@ -229,13 +221,13 @@ static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err)
 *********************************************************************************************************
 */
 
-static void BSP_USBH_Template_IntHandler(void)
-{
-	if (BSP_USBH_Template_ISR_Ptr != (CPU_FNCT_PTR)0)
-	{
-		BSP_USBH_Template_ISR_Ptr((void *)USBH_HC_Template_DrvPtr);
-	}
-}
+// static void BSP_USBH_Template_IntHandler(void)
+// {
+// 	if (BSP_USBH_Template_ISR_Ptr != (CPU_FNCT_PTR)0)
+// 	{
+// 		BSP_USBH_Template_ISR_Ptr((void *)USBH_HC_Template_DrvPtr);
+// 	}
+// }
 
 /*
 **************************************************************************************************************

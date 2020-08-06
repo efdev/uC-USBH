@@ -35,7 +35,7 @@
 #include "usbh_hub.h"
 #include "usbh_core.h"
 #include "usbh_class.h"
-
+#include <usbh_os.h>
 #include <logging/log.h>
 LOG_MODULE_REGISTER(hub);
 /*
@@ -43,6 +43,7 @@ LOG_MODULE_REGISTER(hub);
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
+K_MEM_POOL_DEFINE(USBH_HUB_Pool, sizeof(USBH_HUB_DEV), sizeof(USBH_HUB_DEV), USBH_CFG_MAX_HUBS, sizeof(CPU_ALIGN));
 
 /*
 *********************************************************************************************************
@@ -148,7 +149,7 @@ static const CPU_INT08U USBH_HUB_RH_LangID[] = {
 
 static CPU_INT08U USBH_HUB_DescBuf[USBH_HUB_MAX_DESC_LEN];
 static USBH_HUB_DEV USBH_HUB_Arr[USBH_CFG_MAX_HUBS];
-static MEM_POOL USBH_HUB_Pool;
+// static MEM_POOL USBH_HUB_Pool;
 
 static volatile USBH_HUB_DEV *USBH_HUB_HeadPtr;
 static volatile USBH_HUB_DEV *USBH_HUB_TailPtr;
@@ -394,28 +395,28 @@ USBH_ERR USBH_HUB_PortEn(USBH_HUB_DEV *p_hub_dev,
 static void USBH_HUB_GlobalInit(USBH_ERR *p_err)
 {
     CPU_INT08U hub_ix;
-    CPU_SIZE_T octets_reqd;
-    LIB_ERR err_lib;
+    // CPU_SIZE_T octets_reqd;
+    // LIB_ERR err_lib;
 
     for (hub_ix = 0u; hub_ix < USBH_CFG_MAX_HUBS; hub_ix++)
     { /* Clr all HUB dev structs.                             */
         USBH_HUB_Clr(&USBH_HUB_Arr[hub_ix]);
     }
 
-    Mem_PoolCreate(&USBH_HUB_Pool, /* POOL for managing hub dev structs.                   */
-                   (void *)USBH_HUB_Arr,
-                   sizeof(USBH_HUB_DEV) * USBH_CFG_MAX_HUBS,
-                   USBH_CFG_MAX_HUBS,
-                   sizeof(USBH_HUB_DEV),
-                   sizeof(CPU_ALIGN),
-                   &octets_reqd,
-                   &err_lib);
-    if (err_lib != LIB_MEM_ERR_NONE)
-    {
-        LOG_ERR("alloc memory %d\n", err_lib);
-        *p_err = USBH_ERR_ALLOC;
-        return;
-    }
+    // Mem_PoolCreate(&USBH_HUB_Pool, /* POOL for managing hub dev structs.                   */
+    //                (void *)USBH_HUB_Arr,
+    //                sizeof(USBH_HUB_DEV) * USBH_CFG_MAX_HUBS,
+    //                USBH_CFG_MAX_HUBS,
+    //                sizeof(USBH_HUB_DEV),
+    //                sizeof(CPU_ALIGN),
+    //                &octets_reqd,
+    //                &err_lib);
+    // if (err_lib != LIB_MEM_ERR_NONE)
+    // {
+    //     LOG_ERR("alloc memory %d\n", err_lib);
+    //     *p_err = USBH_ERR_ALLOC;
+    //     return;
+    // }
 
     *p_err = USBH_OS_SemCreate(&USBH_HUB_EventSem,
                                0u);
@@ -475,9 +476,10 @@ static void *USBH_HUB_IF_Probe(USBH_DEV *p_dev,
                                USBH_IF *p_if,
                                USBH_ERR *p_err)
 {
+    LOG_INF("hub if");
     USBH_HUB_DEV *p_hub_dev;
     USBH_IF_DESC if_desc;
-    LIB_ERR err_lib;
+    // LIB_ERR err_lib;
 
     p_hub_dev = (USBH_HUB_DEV *)0;
     *p_err = USBH_IF_DescGet(p_if, /* Get IF desc.                                         */
@@ -493,11 +495,11 @@ static void *USBH_HUB_IF_Probe(USBH_DEV *p_dev,
         p_hub_dev = (USBH_HUB_DEV *)Mem_PoolBlkGet(&USBH_HUB_Pool,
                                                    sizeof(USBH_HUB_DEV),
                                                    &err_lib);
-        if (err_lib != LIB_MEM_ERR_NONE)
-        {
-            *p_err = USBH_ERR_DEV_ALLOC;
-            return ((void *)0);
-        }
+        // if (err_lib != LIB_MEM_ERR_NONE)
+        // {
+        //     *p_err = USBH_ERR_DEV_ALLOC;
+        //     return ((void *)0);
+        // }
 
         USBH_HUB_Clr(p_hub_dev);
         USBH_HUB_RefAdd(p_hub_dev);
@@ -737,7 +739,7 @@ static void USBH_HUB_Uninit(USBH_HUB_DEV *p_hub_dev)
     CPU_INT16U nbr_ports;
     CPU_INT16U port_ix;
     USBH_DEV *p_dev;
-    LIB_ERR err;
+    // LIB_ERR err;
 
     USBH_HUB_EP_Close(p_hub_dev);
     nbr_ports = DEF_MIN(p_hub_dev->Desc.bNbrPorts,
@@ -977,7 +979,7 @@ static void USBH_HUB_EventProcess(void)
     CPU_INT16U nbr_ports;
     CPU_INT16U port_nbr;
     MEM_POOL *p_dev_pool;
-    LIB_ERR err_lib;
+    // LIB_ERR err_lib;
     USBH_DEV_SPD dev_spd;
     USBH_HUB_DEV *p_hub_dev;
     USBH_HUB_PORT_STATUS port_status;
@@ -1138,14 +1140,14 @@ static void USBH_HUB_EventProcess(void)
                 p_dev = (USBH_DEV *)Mem_PoolBlkGet(p_dev_pool,
                                                    sizeof(USBH_DEV),
                                                    &err_lib);
-                if (err_lib != LIB_MEM_ERR_NONE)
-                {
-                    USBH_HUB_PortDis(p_hub_dev, port_nbr);
-                    USBH_HUB_RefRel(p_hub_dev);
-                    USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
+                // if (err_lib != LIB_MEM_ERR_NONE)
+                // {
+                //     USBH_HUB_PortDis(p_hub_dev, port_nbr);
+                //     USBH_HUB_RefRel(p_hub_dev);
+                //     USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
 
-                    return;
-                }
+                //     return;
+                // }
 
                 p_dev->DevSpd = dev_spd;
                 p_dev->HubDevPtr = p_hub_dev->DevPtr;
@@ -1932,7 +1934,7 @@ static USBH_ERR USBH_HUB_RefAdd(USBH_HUB_DEV *p_hub_dev)
 
 static USBH_ERR USBH_HUB_RefRel(USBH_HUB_DEV *p_hub_dev)
 {
-    LIB_ERR err;
+    // LIB_ERR err;
     CPU_SR_ALLOC();
 
     if (p_hub_dev == (USBH_HUB_DEV *)0)

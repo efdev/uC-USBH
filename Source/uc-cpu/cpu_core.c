@@ -24,21 +24,19 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                            INCLUDE FILES
 *********************************************************************************************************
 */
 
-#define    MICRIUM_SOURCE
-#define    CPU_CORE_MODULE
-#include  "cpu_core.h"
-
+#define MICRIUM_SOURCE
+#define CPU_CORE_MODULE
+#include "cpu_core.h"
+#include <usbh_os.h>
 #if (CPU_CFG_CACHE_MGMT_EN == DEF_ENABLED)
-#include  "cpu_cache.h"
+#include "cpu_cache.h"
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -46,12 +44,11 @@
 *********************************************************************************************************
 */
 
-                                                                /* Pop cnt algorithm csts.                              */
-#define CRC_UTIL_POPCNT_MASK01010101_32  0x55555555u
-#define CRC_UTIL_POPCNT_MASK00110011_32  0x33333333u
-#define CRC_UTIL_POPCNT_MASK00001111_32  0x0F0F0F0Fu
-#define CRC_UTIL_POPCNT_POWERSOF256_32   0x01010101u
-
+/* Pop cnt algorithm csts.                              */
+#define CRC_UTIL_POPCNT_MASK01010101_32 0x55555555u
+#define CRC_UTIL_POPCNT_MASK00110011_32 0x33333333u
+#define CRC_UTIL_POPCNT_MASK00001111_32 0x0F0F0F0Fu
+#define CRC_UTIL_POPCNT_POWERSOF256_32 0x01010101u
 
 /*
 *********************************************************************************************************
@@ -59,13 +56,11 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                          LOCAL DATA TYPES
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -94,28 +89,28 @@
 */
 
 #if (!(defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) || \
-      (CPU_CFG_DATA_SIZE_MAX > CPU_CFG_DATA_SIZE))
-static  const  CPU_INT08U  CPU_CntLeadZerosTbl[256] = {                             /* Data vals :                      */
-/*   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   */
-    8u,  7u,  6u,  6u,  5u,  5u,  5u,  5u,  4u,  4u,  4u,  4u,  4u,  4u,  4u,  4u,  /*   0x00 to 0x0F                   */
-    3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  3u,  /*   0x10 to 0x1F                   */
-    2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  /*   0x20 to 0x2F                   */
-    2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  2u,  /*   0x30 to 0x3F                   */
-    1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  /*   0x40 to 0x4F                   */
-    1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  /*   0x50 to 0x5F                   */
-    1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  /*   0x60 to 0x6F                   */
-    1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  1u,  /*   0x70 to 0x7F                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0x80 to 0x8F                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0x90 to 0x9F                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0xA0 to 0xAF                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0xB0 to 0xBF                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0xC0 to 0xCF                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0xD0 to 0xDF                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  /*   0xE0 to 0xEF                   */
-    0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u,  0u   /*   0xF0 to 0xFF                   */
+     (CPU_CFG_DATA_SIZE_MAX > CPU_CFG_DATA_SIZE))
+static const CPU_INT08U CPU_CntLeadZerosTbl[256] = {
+    /* Data vals :                      */
+    /*   0    1    2    3    4    5    6    7    8    9    A    B    C    D    E    F   */
+    8u, 7u, 6u, 6u, 5u, 5u, 5u, 5u, 4u, 4u, 4u, 4u, 4u, 4u, 4u, 4u, /*   0x00 to 0x0F                   */
+    3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, 3u, /*   0x10 to 0x1F                   */
+    2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, /*   0x20 to 0x2F                   */
+    2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, 2u, /*   0x30 to 0x3F                   */
+    1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, /*   0x40 to 0x4F                   */
+    1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, /*   0x50 to 0x5F                   */
+    1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, /*   0x60 to 0x6F                   */
+    1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, /*   0x70 to 0x7F                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0x80 to 0x8F                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0x90 to 0x9F                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0xA0 to 0xAF                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0xB0 to 0xBF                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0xC0 to 0xCF                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0xD0 to 0xDF                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, /*   0xE0 to 0xEF                   */
+    0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u  /*   0xF0 to 0xFF                   */
 };
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -123,8 +118,7 @@ static  const  CPU_INT08U  CPU_CntLeadZerosTbl[256] = {                         
 *********************************************************************************************************
 */
 
-CPU_INT32U  const  CPU_EndiannessTest = 0x12345678LU;               /* Variable to test CPU endianness.                 */
-
+CPU_INT32U const CPU_EndiannessTest = 0x12345678LU; /* Variable to test CPU endianness.                 */
 
 /*
 *********************************************************************************************************
@@ -132,31 +126,27 @@ CPU_INT32U  const  CPU_EndiannessTest = 0x12345678LU;               /* Variable 
 *********************************************************************************************************
 */
 
-#if    (CPU_CFG_NAME_EN   == DEF_ENABLED)                           /* ---------------- CPU NAME FNCTS ---------------- */
-static  void        CPU_NameInit         (void);
+#if (CPU_CFG_NAME_EN == DEF_ENABLED) /* ---------------- CPU NAME FNCTS ---------------- */
+static void CPU_NameInit(void);
 #endif
 
-
-                                                                    /* ----------------- CPU TS FNCTS ----------------- */
-#if   ((CPU_CFG_TS_EN     == DEF_ENABLED) || \
-       (CPU_CFG_TS_TMR_EN == DEF_ENABLED))
-static  void        CPU_TS_Init          (void);
+/* ----------------- CPU TS FNCTS ----------------- */
+#if ((CPU_CFG_TS_EN == DEF_ENABLED) || \
+     (CPU_CFG_TS_TMR_EN == DEF_ENABLED))
+static void CPU_TS_Init(void);
 #endif
 
+#ifdef CPU_CFG_INT_DIS_MEAS_EN /* ---------- CPU INT DIS TIME MEAS FNCTS --------- */
+static void CPU_IntDisMeasInit(void);
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN                                     /* ---------- CPU INT DIS TIME MEAS FNCTS --------- */
-static  void        CPU_IntDisMeasInit   (void);
-
-static  CPU_TS_TMR  CPU_IntDisMeasMaxCalc(CPU_TS_TMR  time_tot_cnts);
+static CPU_TS_TMR CPU_IntDisMeasMaxCalc(CPU_TS_TMR time_tot_cnts);
 #endif
-
 
 /*
 *********************************************************************************************************
 *                                     LOCAL CONFIGURATION ERRORS
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -187,28 +177,27 @@ static  CPU_TS_TMR  CPU_IntDisMeasMaxCalc(CPU_TS_TMR  time_tot_cnts);
 *********************************************************************************************************
 */
 
-void  CPU_Init (void)
+void CPU_Init(void)
 {
-                                                                /* --------------------- INIT TS ---------------------- */
-#if ((CPU_CFG_TS_EN     == DEF_ENABLED) || \
+    /* --------------------- INIT TS ---------------------- */
+#if ((CPU_CFG_TS_EN == DEF_ENABLED) || \
      (CPU_CFG_TS_TMR_EN == DEF_ENABLED))
-    CPU_TS_Init();                                              /* See Note #3a.                                        */
+    CPU_TS_Init(); /* See Note #3a.                                        */
 #endif
-                                                                /* -------------- INIT INT DIS TIME MEAS -------------- */
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-    CPU_IntDisMeasInit();                                       /* See Note #3b.                                        */
+    /* -------------- INIT INT DIS TIME MEAS -------------- */
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+    CPU_IntDisMeasInit(); /* See Note #3b.                                        */
 #endif
 
-                                                                /* ------------------ INIT CPU NAME ------------------- */
+    /* ------------------ INIT CPU NAME ------------------- */
 #if (CPU_CFG_NAME_EN == DEF_ENABLED)
-     CPU_NameInit();
+    CPU_NameInit();
 #endif
 
 #if (CPU_CFG_CACHE_MGMT_EN == DEF_ENABLED)
-     CPU_Cache_Init();
+    CPU_Cache_Init();
 #endif
 }
-
 
 /*
 *********************************************************************************************************
@@ -228,13 +217,13 @@ void  CPU_Init (void)
 *********************************************************************************************************
 */
 
-void  CPU_SW_Exception (void)
+void CPU_SW_Exception(void)
 {
-    for (;;) {
+    for (;;)
+    {
         ;
     }
 }
-
 
 /*
 *********************************************************************************************************
@@ -251,18 +240,16 @@ void  CPU_SW_Exception (void)
 */
 
 #if (CPU_CFG_NAME_EN == DEF_ENABLED)
-void  CPU_NameClr (void)
+void CPU_NameClr(void)
 {
     CPU_SR_ALLOC();
 
-
     CPU_CRITICAL_ENTER();
-    Mem_Clr((void     *)&CPU_Name[0],
-            (CPU_SIZE_T) CPU_CFG_NAME_SIZE);
+    Mem_Clr((void *)&CPU_Name[0],
+            (CPU_SIZE_T)CPU_CFG_NAME_SIZE);
     CPU_CRITICAL_EXIT();
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -290,31 +277,31 @@ void  CPU_NameClr (void)
 */
 
 #if (CPU_CFG_NAME_EN == DEF_ENABLED)
-void  CPU_NameGet (CPU_CHAR  *p_name,
-                   CPU_ERR   *p_err)
+void CPU_NameGet(CPU_CHAR *p_name,
+                 CPU_ERR *p_err)
 {
     CPU_SR_ALLOC();
 
-
-    if (p_err == (CPU_ERR *)0) {
+    if (p_err == (CPU_ERR *)0)
+    {
         CPU_SW_EXCEPTION(;);
     }
 
-    if (p_name == (CPU_CHAR *)0) {
-       *p_err = CPU_ERR_NULL_PTR;
+    if (p_name == (CPU_CHAR *)0)
+    {
+        *p_err = CPU_ERR_NULL_PTR;
         return;
     }
 
     CPU_CRITICAL_ENTER();
-   (void)Str_Copy_N(p_name,
-                   &CPU_Name[0],
-                    CPU_CFG_NAME_SIZE);
+    (void)Str_Copy_N(p_name,
+                     &CPU_Name[0],
+                     CPU_CFG_NAME_SIZE);
     CPU_CRITICAL_EXIT();
 
-   *p_err = CPU_ERR_NONE;
+    *p_err = CPU_ERR_NONE;
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -338,38 +325,40 @@ void  CPU_NameGet (CPU_CHAR  *p_name,
 */
 
 #if (CPU_CFG_NAME_EN == DEF_ENABLED)
-void  CPU_NameSet (const  CPU_CHAR  *p_name,
-                          CPU_ERR   *p_err)
+void CPU_NameSet(const CPU_CHAR *p_name,
+                 CPU_ERR *p_err)
 {
-    CPU_SIZE_T  len;
+    CPU_SIZE_T len;
     CPU_SR_ALLOC();
 
-
-    if (p_err == (CPU_ERR *)0) {
+    if (p_err == (CPU_ERR *)0)
+    {
         CPU_SW_EXCEPTION(;);
     }
 
-    if (p_name == (const CPU_CHAR *)0) {
-       *p_err = CPU_ERR_NULL_PTR;
+    if (p_name == (const CPU_CHAR *)0)
+    {
+        *p_err = CPU_ERR_NULL_PTR;
         return;
     }
 
     len = Str_Len_N(p_name,
                     CPU_CFG_NAME_SIZE);
-    if (len < CPU_CFG_NAME_SIZE) {                              /* If       cfg name len < max name size, ...           */
+    if (len < CPU_CFG_NAME_SIZE)
+    { /* If       cfg name len < max name size, ...           */
         CPU_CRITICAL_ENTER();
-       (void)Str_Copy_N(&CPU_Name[0],                           /* ... copy cfg name to CPU host name.                  */
+        (void)Str_Copy_N(&CPU_Name[0], /* ... copy cfg name to CPU host name.                  */
                          p_name,
                          CPU_CFG_NAME_SIZE);
         CPU_CRITICAL_EXIT();
-       *p_err = CPU_ERR_NONE;
-
-    } else {
-       *p_err = CPU_ERR_NAME_SIZE;
+        *p_err = CPU_ERR_NONE;
+    }
+    else
+    {
+        *p_err = CPU_ERR_NAME_SIZE;
     }
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -419,33 +408,32 @@ void  CPU_NameSet (const  CPU_CHAR  *p_name,
 */
 
 #if (CPU_CFG_TS_32_EN == DEF_ENABLED)
-CPU_TS32  CPU_TS_Get32 (void)
+CPU_TS32 CPU_TS_Get32(void)
 {
-    CPU_TS32    ts;
-#if (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_32)
-    CPU_TS_TMR  tmr_cur;
-    CPU_TS_TMR  tmr_delta;
+    CPU_TS32 ts;
+#if (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_32)
+    CPU_TS_TMR tmr_cur;
+    CPU_TS_TMR tmr_delta;
     CPU_SR_ALLOC();
 
 #endif
 
 #if (CPU_CFG_TS_TMR_SIZE >= CPU_WORD_SIZE_32)
-    ts = (CPU_TS32)CPU_TS_TmrRd();                                  /* Get cur ts tmr val (in 32-bit ts cnts).          */
+    ts = (CPU_TS32)CPU_TS_TmrRd(); /* Get cur ts tmr val (in 32-bit ts cnts).          */
 
 #else
     CPU_INT_DIS();
-    tmr_cur            = (CPU_TS_TMR) CPU_TS_TmrRd();               /* Get cur ts tmr val (in ts tmr cnts).             */
-    tmr_delta          = (CPU_TS_TMR)(tmr_cur - CPU_TS_32_TmrPrev); /* Calc      delta ts tmr cnts.                     */
-    CPU_TS_32_Accum   += (CPU_TS32  ) tmr_delta;                    /* Inc ts by delta ts tmr cnts (see Note #2).       */
-    CPU_TS_32_TmrPrev  = (CPU_TS_TMR) tmr_cur;                      /* Save cur ts tmr cnts for next update.            */
-    ts                 = (CPU_TS32  ) CPU_TS_32_Accum;
+    tmr_cur = (CPU_TS_TMR)CPU_TS_TmrRd();                  /* Get cur ts tmr val (in ts tmr cnts).             */
+    tmr_delta = (CPU_TS_TMR)(tmr_cur - CPU_TS_32_TmrPrev); /* Calc      delta ts tmr cnts.                     */
+    CPU_TS_32_Accum += (CPU_TS32)tmr_delta;                /* Inc ts by delta ts tmr cnts (see Note #2).       */
+    CPU_TS_32_TmrPrev = (CPU_TS_TMR)tmr_cur;               /* Save cur ts tmr cnts for next update.            */
+    ts = (CPU_TS32)CPU_TS_32_Accum;
     CPU_INT_EN();
 #endif
 
     return (ts);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -495,33 +483,31 @@ CPU_TS32  CPU_TS_Get32 (void)
 */
 
 #if (CPU_CFG_TS_64_EN == DEF_ENABLED)
-CPU_TS64  CPU_TS_Get64 (void)
+CPU_TS64 CPU_TS_Get64(void)
 {
-    CPU_TS64    ts;
-#if (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_64)
-    CPU_TS_TMR  tmr_cur;
-    CPU_TS_TMR  tmr_delta;
+    CPU_TS64 ts;
+#if (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_64)
+    CPU_TS_TMR tmr_cur;
+    CPU_TS_TMR tmr_delta;
     CPU_SR_ALLOC();
 #endif
 
-
 #if (CPU_CFG_TS_TMR_SIZE >= CPU_WORD_SIZE_64)
-    ts = (CPU_TS64)CPU_TS_TmrRd();                                  /* Get cur ts tmr val (in 64-bit ts cnts).          */
+    ts = (CPU_TS64)CPU_TS_TmrRd(); /* Get cur ts tmr val (in 64-bit ts cnts).          */
 
 #else
     CPU_INT_DIS();
-    tmr_cur            = (CPU_TS_TMR) CPU_TS_TmrRd();               /* Get cur ts tmr val (in ts tmr cnts).             */
-    tmr_delta          = (CPU_TS_TMR)(tmr_cur - CPU_TS_64_TmrPrev); /* Calc      delta ts tmr cnts.                     */
-    CPU_TS_64_Accum   += (CPU_TS64  ) tmr_delta;                    /* Inc ts by delta ts tmr cnts (see Note #2).       */
-    CPU_TS_64_TmrPrev  = (CPU_TS_TMR) tmr_cur;                      /* Save cur ts tmr cnts for next update.            */
-    ts                 = (CPU_TS64  ) CPU_TS_64_Accum;
+    tmr_cur = (CPU_TS_TMR)CPU_TS_TmrRd();                  /* Get cur ts tmr val (in ts tmr cnts).             */
+    tmr_delta = (CPU_TS_TMR)(tmr_cur - CPU_TS_64_TmrPrev); /* Calc      delta ts tmr cnts.                     */
+    CPU_TS_64_Accum += (CPU_TS64)tmr_delta;                /* Inc ts by delta ts tmr cnts (see Note #2).       */
+    CPU_TS_64_TmrPrev = (CPU_TS_TMR)tmr_cur;               /* Save cur ts tmr cnts for next update.            */
+    ts = (CPU_TS64)CPU_TS_64_Accum;
     CPU_INT_EN();
 #endif
 
     return (ts);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -544,20 +530,19 @@ CPU_TS64  CPU_TS_Get64 (void)
 */
 
 #if (CPU_CFG_TS_EN == DEF_ENABLED)
-void  CPU_TS_Update (void)
+void CPU_TS_Update(void)
 {
-#if ((CPU_CFG_TS_32_EN    == DEF_ENABLED)  && \
-     (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_32))
-   (void)CPU_TS_Get32();
+#if ((CPU_CFG_TS_32_EN == DEF_ENABLED) && \
+     (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_32))
+    (void)CPU_TS_Get32();
 #endif
 
-#if ((CPU_CFG_TS_64_EN    == DEF_ENABLED)  && \
-     (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_64))
-   (void)CPU_TS_Get64();
+#if ((CPU_CFG_TS_64_EN == DEF_ENABLED) && \
+     (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_64))
+    (void)CPU_TS_Get64();
 #endif
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -581,22 +566,21 @@ void  CPU_TS_Update (void)
 */
 
 #if (CPU_CFG_TS_TMR_EN == DEF_ENABLED)
-CPU_TS_TMR_FREQ  CPU_TS_TmrFreqGet (CPU_ERR  *p_err)
+CPU_TS_TMR_FREQ CPU_TS_TmrFreqGet(CPU_ERR *p_err)
 {
-    CPU_TS_TMR_FREQ  freq_hz;
+    CPU_TS_TMR_FREQ freq_hz;
 
-
-    if (p_err == (CPU_ERR *)0) {
+    if (p_err == (CPU_ERR *)0)
+    {
         CPU_SW_EXCEPTION(0);
     }
 
-    freq_hz =  CPU_TS_TmrFreq_Hz;
-   *p_err   = (freq_hz != 0u) ? CPU_ERR_NONE : CPU_ERR_TS_FREQ_INVALID;
+    freq_hz = CPU_TS_TmrFreq_Hz;
+    *p_err = (freq_hz != 0u) ? CPU_ERR_NONE : CPU_ERR_TS_FREQ_INVALID;
 
     return (freq_hz);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -626,12 +610,11 @@ CPU_TS_TMR_FREQ  CPU_TS_TmrFreqGet (CPU_ERR  *p_err)
 */
 
 #if (CPU_CFG_TS_TMR_EN == DEF_ENABLED)
-void  CPU_TS_TmrFreqSet (CPU_TS_TMR_FREQ  freq_hz)
+void CPU_TS_TmrFreqSet(CPU_TS_TMR_FREQ freq_hz)
 {
     CPU_TS_TmrFreq_Hz = freq_hz;
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -651,14 +634,13 @@ void  CPU_TS_TmrFreqSet (CPU_TS_TMR_FREQ  freq_hz)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-CPU_TS_TMR  CPU_IntDisMeasMaxCurReset (void)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+CPU_TS_TMR CPU_IntDisMeasMaxCurReset(void)
 {
-    CPU_TS_TMR  time_max_cnts;
+    CPU_TS_TMR time_max_cnts;
     CPU_SR_ALLOC();
 
-
-    time_max_cnts             = CPU_IntDisMeasMaxCurGet();
+    time_max_cnts = CPU_IntDisMeasMaxCurGet();
     CPU_INT_DIS();
     CPU_IntDisMeasMaxCur_cnts = 0u;
     CPU_INT_EN();
@@ -666,7 +648,6 @@ CPU_TS_TMR  CPU_IntDisMeasMaxCurReset (void)
     return (time_max_cnts);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -686,13 +667,12 @@ CPU_TS_TMR  CPU_IntDisMeasMaxCurReset (void)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-CPU_TS_TMR  CPU_IntDisMeasMaxCurGet (void)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+CPU_TS_TMR CPU_IntDisMeasMaxCurGet(void)
 {
-    CPU_TS_TMR  time_tot_cnts;
-    CPU_TS_TMR  time_max_cnts;
+    CPU_TS_TMR time_tot_cnts;
+    CPU_TS_TMR time_max_cnts;
     CPU_SR_ALLOC();
-
 
     CPU_INT_DIS();
     time_tot_cnts = CPU_IntDisMeasMaxCur_cnts;
@@ -702,7 +682,6 @@ CPU_TS_TMR  CPU_IntDisMeasMaxCurGet (void)
     return (time_max_cnts);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -722,13 +701,12 @@ CPU_TS_TMR  CPU_IntDisMeasMaxCurGet (void)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-CPU_TS_TMR  CPU_IntDisMeasMaxGet (void)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+CPU_TS_TMR CPU_IntDisMeasMaxGet(void)
 {
-    CPU_TS_TMR  time_tot_cnts;
-    CPU_TS_TMR  time_max_cnts;
+    CPU_TS_TMR time_tot_cnts;
+    CPU_TS_TMR time_max_cnts;
     CPU_SR_ALLOC();
-
 
     CPU_INT_DIS();
     time_tot_cnts = CPU_IntDisMeasMax_cnts;
@@ -738,7 +716,6 @@ CPU_TS_TMR  CPU_IntDisMeasMaxGet (void)
     return (time_max_cnts);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -754,17 +731,17 @@ CPU_TS_TMR  CPU_IntDisMeasMaxGet (void)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-void  CPU_IntDisMeasStart (void)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+void CPU_IntDisMeasStart(void)
 {
     CPU_IntDisMeasCtr++;
-    if (CPU_IntDisNestCtr == 0u) {                                  /* If ints NOT yet dis'd, ...                       */
-        CPU_IntDisMeasStart_cnts = CPU_TS_TmrRd();                  /* ... get ints dis'd start time.                   */
+    if (CPU_IntDisNestCtr == 0u)
+    {                                              /* If ints NOT yet dis'd, ...                       */
+        CPU_IntDisMeasStart_cnts = CPU_TS_TmrRd(); /* ... get ints dis'd start time.                   */
     }
     CPU_IntDisNestCtr++;
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -933,29 +910,30 @@ void  CPU_IntDisMeasStart (void)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-void  CPU_IntDisMeasStop (void)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+void CPU_IntDisMeasStop(void)
 {
-    CPU_TS_TMR  time_ints_disd_cnts;
-
+    CPU_TS_TMR time_ints_disd_cnts;
 
     CPU_IntDisNestCtr--;
-    if (CPU_IntDisNestCtr == 0u) {                                  /* If ints NO longer dis'd,        ...              */
-        CPU_IntDisMeasStop_cnts = CPU_TS_TmrRd();                   /* ... get  ints dis'd stop time & ...              */
-                                                                    /* ... calc ints dis'd tot  time (see Note #1b2A).  */
-        time_ints_disd_cnts     = CPU_IntDisMeasStop_cnts -
-                                  CPU_IntDisMeasStart_cnts;
-                                                                    /* Calc max ints dis'd times.                       */
-        if (CPU_IntDisMeasMaxCur_cnts < time_ints_disd_cnts) {
+    if (CPU_IntDisNestCtr == 0u)
+    {                                             /* If ints NO longer dis'd,        ...              */
+        CPU_IntDisMeasStop_cnts = CPU_TS_TmrRd(); /* ... get  ints dis'd stop time & ...              */
+                                                  /* ... calc ints dis'd tot  time (see Note #1b2A).  */
+        time_ints_disd_cnts = CPU_IntDisMeasStop_cnts -
+                              CPU_IntDisMeasStart_cnts;
+        /* Calc max ints dis'd times.                       */
+        if (CPU_IntDisMeasMaxCur_cnts < time_ints_disd_cnts)
+        {
             CPU_IntDisMeasMaxCur_cnts = time_ints_disd_cnts;
         }
-        if (CPU_IntDisMeasMax_cnts    < time_ints_disd_cnts) {
-            CPU_IntDisMeasMax_cnts    = time_ints_disd_cnts;
+        if (CPU_IntDisMeasMax_cnts < time_ints_disd_cnts)
+        {
+            CPU_IntDisMeasMax_cnts = time_ints_disd_cnts;
         }
     }
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1047,13 +1025,12 @@ void  CPU_IntDisMeasStop (void)
 *********************************************************************************************************
 */
 
-#ifndef   CPU_CFG_LEAD_ZEROS_ASM_PRESENT
-CPU_DATA  CPU_CntLeadZeros (CPU_DATA  val)
+#ifndef CPU_CFG_LEAD_ZEROS_ASM_PRESENT
+CPU_DATA CPU_CntLeadZeros(CPU_DATA val)
 {
-    CPU_DATA  nbr_lead_zeros;
+    CPU_DATA nbr_lead_zeros;
 
-
-#if   (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_08)
+#if (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_08)
     nbr_lead_zeros = CPU_CntLeadZeros08((CPU_INT08U)val);
 
 #elif (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_16)
@@ -1065,15 +1042,13 @@ CPU_DATA  CPU_CntLeadZeros (CPU_DATA  val)
 #elif (CPU_CFG_DATA_SIZE == CPU_WORD_SIZE_64)
     nbr_lead_zeros = CPU_CntLeadZeros64((CPU_INT64U)val);
 
-#else                                                           /* See Note #1a.                                        */
+#else /* See Note #1a.                                        */
     nbr_lead_zeros = DEF_INT_CPU_U_MAX_VAL;
 #endif
-
 
     return (nbr_lead_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1105,33 +1080,30 @@ CPU_DATA  CPU_CntLeadZeros (CPU_DATA  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_08)
-CPU_DATA  CPU_CntLeadZeros08 (CPU_INT08U  val)
+CPU_DATA CPU_CntLeadZeros08(CPU_INT08U val)
 {
-#if  (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_08)))
-    CPU_DATA  ix;
+#if (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_08)))
+    CPU_DATA ix;
 #endif
-    CPU_DATA  nbr_lead_zeros;
+    CPU_DATA nbr_lead_zeros;
 
-                                                                                /* ---------- ASM-OPTIMIZED ----------- */
+    /* ---------- ASM-OPTIMIZED ----------- */
 #if ((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_08))
-    nbr_lead_zeros  =  CPU_CntLeadZeros((CPU_DATA)val);
+    nbr_lead_zeros = CPU_CntLeadZeros((CPU_DATA)val);
     nbr_lead_zeros -= (CPU_CFG_DATA_SIZE - CPU_WORD_SIZE_08) * DEF_OCTET_NBR_BITS;
 
-
-#else                                                                           /* ----------- C-OPTIMIZED ------------ */
-                                                                                /* Chk bits [07:00] :                   */
-                                                                                /* .. Nbr lead zeros =               .. */
-    ix              = (CPU_DATA)(val);                                          /* .. lookup tbl ix  = 'val' >>  0 bits */
-    nbr_lead_zeros  = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]);                      /* .. plus nbr msb lead zeros =  0 bits.*/
+#else /* ----------- C-OPTIMIZED ------------ */
+    /* Chk bits [07:00] :                   */
+    /* .. Nbr lead zeros =               .. */
+    ix = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >>  0 bits */
+    nbr_lead_zeros = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]); /* .. plus nbr msb lead zeros =  0 bits.*/
 #endif
-
 
     return (nbr_lead_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1165,39 +1137,38 @@ CPU_DATA  CPU_CntLeadZeros08 (CPU_INT08U  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_16)
-CPU_DATA  CPU_CntLeadZeros16 (CPU_INT16U  val)
+CPU_DATA CPU_CntLeadZeros16(CPU_INT16U val)
 {
-#if  (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_16)))
-    CPU_DATA  ix;
+#if (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_16)))
+    CPU_DATA ix;
 #endif
-    CPU_DATA  nbr_lead_zeros;
+    CPU_DATA nbr_lead_zeros;
 
-                                                                                /* ---------- ASM-OPTIMIZED ----------- */
+    /* ---------- ASM-OPTIMIZED ----------- */
 #if ((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_16))
-    nbr_lead_zeros  =  CPU_CntLeadZeros((CPU_DATA)val);
+    nbr_lead_zeros = CPU_CntLeadZeros((CPU_DATA)val);
     nbr_lead_zeros -= (CPU_CFG_DATA_SIZE - CPU_WORD_SIZE_16) * DEF_OCTET_NBR_BITS;
 
-
-#else                                                                           /* ----------- C-OPTIMIZED ------------ */
-    if (val > 0x00FFu) {                                                        /* Chk bits [15:08] :                   */
-        val            >>= 8u;                                                  /* .. Nbr lead zeros =               .. */
-        ix               = (CPU_DATA)(val);                                     /* .. lookup tbl ix  = 'val' >>  8 bits */
-        nbr_lead_zeros   = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]);                 /* .. plus nbr msb lead zeros =  0 bits.*/
-
-    } else {                                                                    /* Chk bits [07:00] :                   */
-                                                                                /* .. Nbr lead zeros =               .. */
-        ix               = (CPU_DATA)(val);                                     /* .. lookup tbl ix  = 'val' >>  0 bits */
-        nbr_lead_zeros   = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] +  8u); /* .. plus nbr msb lead zeros =  8 bits.*/
+#else /* ----------- C-OPTIMIZED ------------ */
+    if (val > 0x00FFu)
+    {                                                         /* Chk bits [15:08] :                   */
+        val >>= 8u;                                           /* .. Nbr lead zeros =               .. */
+        ix = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >>  8 bits */
+        nbr_lead_zeros = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]); /* .. plus nbr msb lead zeros =  0 bits.*/
+    }
+    else
+    {                                                                        /* Chk bits [07:00] :                   */
+                                                                             /* .. Nbr lead zeros =               .. */
+        ix = (CPU_DATA)(val);                                                /* .. lookup tbl ix  = 'val' >>  0 bits */
+        nbr_lead_zeros = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] + 8u); /* .. plus nbr msb lead zeros =  8 bits.*/
     }
 #endif
-
 
     return (nbr_lead_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1231,53 +1202,56 @@ CPU_DATA  CPU_CntLeadZeros16 (CPU_INT16U  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_32)
-CPU_DATA  CPU_CntLeadZeros32 (CPU_INT32U  val)
+CPU_DATA CPU_CntLeadZeros32(CPU_INT32U val)
 {
-#if  (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_32)))
-    CPU_DATA  ix;
+#if (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_32)))
+    CPU_DATA ix;
 #endif
-    CPU_DATA  nbr_lead_zeros;
+    CPU_DATA nbr_lead_zeros;
 
-                                                                                /* ---------- ASM-OPTIMIZED ----------- */
+    /* ---------- ASM-OPTIMIZED ----------- */
 #if ((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_32))
-    nbr_lead_zeros  =  CPU_CntLeadZeros((CPU_DATA)val);
+    nbr_lead_zeros = CPU_CntLeadZeros((CPU_DATA)val);
     nbr_lead_zeros -= (CPU_CFG_DATA_SIZE - CPU_WORD_SIZE_32) * DEF_OCTET_NBR_BITS;
 
-
-#else                                                                           /* ----------- C-OPTIMIZED ------------ */
-    if (val > 0x0000FFFFu) {
-        if (val > 0x00FFFFFFu) {                                                /* Chk bits [31:24] :                   */
-            val            >>= 24u;                                             /* .. Nbr lead zeros =               .. */
-            ix               = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >> 24 bits */
-            nbr_lead_zeros   = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]);             /* .. plus nbr msb lead zeros =  0 bits.*/
-
-        } else {                                                                /* Chk bits [23:16] :                   */
-            val            >>= 16u;                                             /* .. Nbr lead zeros =               .. */
-            ix               = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >> 16 bits */
-            nbr_lead_zeros   = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] +  8u);/* .. plus nbr msb lead zeros =  8 bits.*/
+#else /* ----------- C-OPTIMIZED ------------ */
+    if (val > 0x0000FFFFu)
+    {
+        if (val > 0x00FFFFFFu)
+        {                                                         /* Chk bits [31:24] :                   */
+            val >>= 24u;                                          /* .. Nbr lead zeros =               .. */
+            ix = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >> 24 bits */
+            nbr_lead_zeros = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]); /* .. plus nbr msb lead zeros =  0 bits.*/
         }
-
-    } else {
-        if (val > 0x000000FFu) {                                                /* Chk bits [15:08] :                   */
-            val            >>= 8u;                                              /* .. Nbr lead zeros =               .. */
-            ix               = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >>  8 bits */
-            nbr_lead_zeros   = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] + 16u);/* .. plus nbr msb lead zeros = 16 bits.*/
-
-        } else {                                                                /* Chk bits [07:00] :                   */
-                                                                                /* .. Nbr lead zeros =               .. */
-            ix               = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >>  0 bits */
-            nbr_lead_zeros   = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] + 24u);/* .. plus nbr msb lead zeros = 24 bits.*/
+        else
+        {                                                                        /* Chk bits [23:16] :                   */
+            val >>= 16u;                                                         /* .. Nbr lead zeros =               .. */
+            ix = (CPU_DATA)(val);                                                /* .. lookup tbl ix  = 'val' >> 16 bits */
+            nbr_lead_zeros = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] + 8u); /* .. plus nbr msb lead zeros =  8 bits.*/
+        }
+    }
+    else
+    {
+        if (val > 0x000000FFu)
+        {                                                                         /* Chk bits [15:08] :                   */
+            val >>= 8u;                                                           /* .. Nbr lead zeros =               .. */
+            ix = (CPU_DATA)(val);                                                 /* .. lookup tbl ix  = 'val' >>  8 bits */
+            nbr_lead_zeros = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] + 16u); /* .. plus nbr msb lead zeros = 16 bits.*/
+        }
+        else
+        {                                                                         /* Chk bits [07:00] :                   */
+                                                                                  /* .. Nbr lead zeros =               .. */
+            ix = (CPU_DATA)(val);                                                 /* .. lookup tbl ix  = 'val' >>  0 bits */
+            nbr_lead_zeros = (CPU_DATA)((CPU_DATA)CPU_CntLeadZerosTbl[ix] + 24u); /* .. plus nbr msb lead zeros = 24 bits.*/
         }
     }
 #endif
 
-
     return (nbr_lead_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1311,81 +1285,92 @@ CPU_DATA  CPU_CntLeadZeros32 (CPU_INT32U  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_64)
-CPU_DATA  CPU_CntLeadZeros64 (CPU_INT64U  val)
+CPU_DATA CPU_CntLeadZeros64(CPU_INT64U val)
 {
-#if  (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_64)))
-    CPU_DATA  ix;
+#if (!((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_64)))
+    CPU_DATA ix;
 #endif
-    CPU_DATA  nbr_lead_zeros;
+    CPU_DATA nbr_lead_zeros;
 
-                                                                                /* ---------- ASM-OPTIMIZED ----------- */
+    /* ---------- ASM-OPTIMIZED ----------- */
 #if ((defined(CPU_CFG_LEAD_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_64))
-    nbr_lead_zeros  =  CPU_CntLeadZeros((CPU_DATA)val);
+    nbr_lead_zeros = CPU_CntLeadZeros((CPU_DATA)val);
     nbr_lead_zeros -= (CPU_CFG_DATA_SIZE - CPU_WORD_SIZE_64) * DEF_OCTET_NBR_BITS;
 
-
-#else                                                                           /* ----------- C-OPTIMIZED ------------ */
-    if (val > 0x00000000FFFFFFFFuLL) {
-        if (val > 0x0000FFFFFFFFFFFFuLL) {
-            if (val > 0x00FFFFFFFFFFFFFFuLL) {                                  /* Chk bits [63:56] :                   */
-                val            >>= 56u;                                         /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >> 56 bits */
-                nbr_lead_zeros   = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]);         /* .. plus nbr msb lead zeros =  0 bits.*/
-
-            } else {                                                            /* Chk bits [55:48] :                   */
-                val            >>= 48u;                                         /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >> 48 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] +  8u);/* .. plus nbr msb lead zeros =  8 bits.*/
+#else /* ----------- C-OPTIMIZED ------------ */
+    if (val > 0x00000000FFFFFFFFuLL)
+    {
+        if (val > 0x0000FFFFFFFFFFFFuLL)
+        {
+            if (val > 0x00FFFFFFFFFFFFFFuLL)
+            {                                                         /* Chk bits [63:56] :                   */
+                val >>= 56u;                                          /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                 /* .. lookup tbl ix  = 'val' >> 56 bits */
+                nbr_lead_zeros = (CPU_DATA)(CPU_CntLeadZerosTbl[ix]); /* .. plus nbr msb lead zeros =  0 bits.*/
             }
-
-        } else {
-            if (val > 0x000000FFFFFFFFFFuLL) {                                  /* Chk bits [47:40] :                   */
-                val            >>= 40u;                                         /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >> 40 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 16u);/* .. plus nbr msb lead zeros = 16 bits.*/
-
-            } else {                                                            /* Chk bits [39:32] :                   */
-                val            >>= 32u;                                         /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >> 32 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 24u);/* .. plus nbr msb lead zeros = 24 bits.*/
+            else
+            {                                                                          /* Chk bits [55:48] :                   */
+                val >>= 48u;                                                           /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                  /* .. lookup tbl ix  = 'val' >> 48 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 8u); /* .. plus nbr msb lead zeros =  8 bits.*/
             }
         }
-
-    } else {
-        if (val > 0x000000000000FFFFuLL) {
-            if (val > 0x0000000000FFFFFFuLL) {                                  /* Chk bits [31:24] :                   */
-                val            >>= 24u;                                         /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >> 24 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 32u);/* .. plus nbr msb lead zeros = 32 bits.*/
-
-            } else {                                                            /* Chk bits [23:16] :                   */
-                val            >>= 16u;                                         /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >> 16 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 40u);/* .. plus nbr msb lead zeros = 40 bits.*/
+        else
+        {
+            if (val > 0x000000FFFFFFFFFFuLL)
+            {                                                                           /* Chk bits [47:40] :                   */
+                val >>= 40u;                                                            /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                   /* .. lookup tbl ix  = 'val' >> 40 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 16u); /* .. plus nbr msb lead zeros = 16 bits.*/
             }
-
-        } else {
-            if (val > 0x00000000000000FFuLL) {                                  /* Chk bits [15:08] :                   */
-                val            >>= 8u;                                          /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >>  8 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 48u);/* .. plus nbr msb lead zeros = 48 bits.*/
-
-            } else {                                                            /* Chk bits [07:00] :                   */
-                                                                                /* .. Nbr lead zeros =               .. */
-                ix               = (CPU_DATA)(val);                             /* .. lookup tbl ix  = 'val' >>  0 bits */
-                nbr_lead_zeros   = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 56u);/* .. plus nbr msb lead zeros = 56 bits.*/
+            else
+            {                                                                           /* Chk bits [39:32] :                   */
+                val >>= 32u;                                                            /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                   /* .. lookup tbl ix  = 'val' >> 32 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 24u); /* .. plus nbr msb lead zeros = 24 bits.*/
+            }
+        }
+    }
+    else
+    {
+        if (val > 0x000000000000FFFFuLL)
+        {
+            if (val > 0x0000000000FFFFFFuLL)
+            {                                                                           /* Chk bits [31:24] :                   */
+                val >>= 24u;                                                            /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                   /* .. lookup tbl ix  = 'val' >> 24 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 32u); /* .. plus nbr msb lead zeros = 32 bits.*/
+            }
+            else
+            {                                                                           /* Chk bits [23:16] :                   */
+                val >>= 16u;                                                            /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                   /* .. lookup tbl ix  = 'val' >> 16 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 40u); /* .. plus nbr msb lead zeros = 40 bits.*/
+            }
+        }
+        else
+        {
+            if (val > 0x00000000000000FFuLL)
+            {                                                                           /* Chk bits [15:08] :                   */
+                val >>= 8u;                                                             /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                   /* .. lookup tbl ix  = 'val' >>  8 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 48u); /* .. plus nbr msb lead zeros = 48 bits.*/
+            }
+            else
+            {                                                                           /* Chk bits [07:00] :                   */
+                                                                                        /* .. Nbr lead zeros =               .. */
+                ix = (CPU_DATA)(val);                                                   /* .. lookup tbl ix  = 'val' >>  0 bits */
+                nbr_lead_zeros = (CPU_DATA)((CPU_INT64U)CPU_CntLeadZerosTbl[ix] + 56u); /* .. plus nbr msb lead zeros = 56 bits.*/
             }
         }
     }
 #endif
 
-
     return (nbr_lead_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1491,29 +1476,26 @@ CPU_DATA  CPU_CntLeadZeros64 (CPU_INT64U  val)
 *********************************************************************************************************
 */
 
-#ifndef   CPU_CFG_TRAIL_ZEROS_ASM_PRESENT
-CPU_DATA  CPU_CntTrailZeros (CPU_DATA  val)
+#ifndef CPU_CFG_TRAIL_ZEROS_ASM_PRESENT
+CPU_DATA CPU_CntTrailZeros(CPU_DATA val)
 {
-    CPU_DATA  val_bit_mask;
-    CPU_DATA  nbr_lead_zeros;
-    CPU_DATA  nbr_trail_zeros;
+    CPU_DATA val_bit_mask;
+    CPU_DATA nbr_lead_zeros;
+    CPU_DATA nbr_trail_zeros;
 
-
-    if (val == 0u) {                                            /* Rtn ALL val bits as zero'd (see Note #3).            */
+    if (val == 0u)
+    { /* Rtn ALL val bits as zero'd (see Note #3).            */
         return ((CPU_DATA)(CPU_CFG_DATA_SIZE * DEF_OCTET_NBR_BITS));
     }
 
-
-    val_bit_mask    = val & ((CPU_DATA)~val + 1u);              /* Zero/clr all bits EXCEPT least-sig set bit.          */
-    nbr_lead_zeros  = CPU_CntLeadZeros(val_bit_mask);           /* Cnt  nbr lead  0s.                                   */
-                                                                /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
+    val_bit_mask = val & ((CPU_DATA)~val + 1u);      /* Zero/clr all bits EXCEPT least-sig set bit.          */
+    nbr_lead_zeros = CPU_CntLeadZeros(val_bit_mask); /* Cnt  nbr lead  0s.                                   */
+                                                     /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
     nbr_trail_zeros = ((CPU_DATA)((CPU_CFG_DATA_SIZE * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros);
-
 
     return (nbr_trail_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1580,37 +1562,35 @@ CPU_DATA  CPU_CntTrailZeros (CPU_DATA  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_08)
-CPU_DATA  CPU_CntTrailZeros08 (CPU_INT08U  val)
+CPU_DATA CPU_CntTrailZeros08(CPU_INT08U val)
 {
-#if  (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_08)))
-    CPU_INT08U  val_bit_mask;
-    CPU_DATA    nbr_lead_zeros;
+#if (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_08)))
+    CPU_INT08U val_bit_mask;
+    CPU_DATA nbr_lead_zeros;
 #endif
-    CPU_DATA    nbr_trail_zeros;
+    CPU_DATA nbr_trail_zeros;
 
-
-    if (val == 0u) {                                            /* Rtn ALL val bits as zero'd (see Note #3).            */
+    if (val == 0u)
+    { /* Rtn ALL val bits as zero'd (see Note #3).            */
         return ((CPU_DATA)(CPU_WORD_SIZE_08 * DEF_OCTET_NBR_BITS));
     }
 
-                                                                /* ------------------ ASM-OPTIMIZED ------------------- */
+    /* ------------------ ASM-OPTIMIZED ------------------- */
 #if ((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_08))
     nbr_trail_zeros = CPU_CntTrailZeros((CPU_DATA)val);
 
-#else                                                           /* ------------------- C-OPTIMIZED -------------------- */
-    val_bit_mask    = val & ((CPU_INT08U)~val + 1u);            /* Zero/clr all bits EXCEPT least-sig set bit.          */
-    nbr_lead_zeros  = CPU_CntLeadZeros08(val_bit_mask);         /* Cnt  nbr lead  0s.                                   */
-                                                                /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
+#else /* ------------------- C-OPTIMIZED -------------------- */
+    val_bit_mask = val & ((CPU_INT08U)~val + 1u);      /* Zero/clr all bits EXCEPT least-sig set bit.          */
+    nbr_lead_zeros = CPU_CntLeadZeros08(val_bit_mask); /* Cnt  nbr lead  0s.                                   */
+                                                       /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
     nbr_trail_zeros = ((CPU_DATA)((CPU_WORD_SIZE_08 * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros);
 #endif
-
 
     return (nbr_trail_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1679,37 +1659,35 @@ CPU_DATA  CPU_CntTrailZeros08 (CPU_INT08U  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_16)
-CPU_DATA  CPU_CntTrailZeros16 (CPU_INT16U  val)
+CPU_DATA CPU_CntTrailZeros16(CPU_INT16U val)
 {
-#if  (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_16)))
-    CPU_INT16U  val_bit_mask;
-    CPU_DATA    nbr_lead_zeros;
+#if (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_16)))
+    CPU_INT16U val_bit_mask;
+    CPU_DATA nbr_lead_zeros;
 #endif
-    CPU_DATA    nbr_trail_zeros;
+    CPU_DATA nbr_trail_zeros;
 
-
-    if (val == 0u) {                                            /* Rtn ALL val bits as zero'd (see Note #3).            */
+    if (val == 0u)
+    { /* Rtn ALL val bits as zero'd (see Note #3).            */
         return ((CPU_DATA)(CPU_WORD_SIZE_16 * DEF_OCTET_NBR_BITS));
     }
 
-                                                                /* ------------------ ASM-OPTIMIZED ------------------- */
+    /* ------------------ ASM-OPTIMIZED ------------------- */
 #if ((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_16))
     nbr_trail_zeros = CPU_CntTrailZeros((CPU_DATA)val);
 
-#else                                                           /* ------------------- C-OPTIMIZED -------------------- */
-    val_bit_mask    = val & ((CPU_INT16U)~val + 1u);            /* Zero/clr all bits EXCEPT least-sig set bit.          */
-    nbr_lead_zeros  = CPU_CntLeadZeros16(val_bit_mask);         /* Cnt  nbr lead  0s.                                   */
-                                                                /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
+#else /* ------------------- C-OPTIMIZED -------------------- */
+    val_bit_mask = val & ((CPU_INT16U)~val + 1u);      /* Zero/clr all bits EXCEPT least-sig set bit.          */
+    nbr_lead_zeros = CPU_CntLeadZeros16(val_bit_mask); /* Cnt  nbr lead  0s.                                   */
+                                                       /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
     nbr_trail_zeros = ((CPU_DATA)((CPU_WORD_SIZE_16 * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros);
 #endif
-
 
     return (nbr_trail_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1778,37 +1756,35 @@ CPU_DATA  CPU_CntTrailZeros16 (CPU_INT16U  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_32)
-CPU_DATA  CPU_CntTrailZeros32 (CPU_INT32U  val)
+CPU_DATA CPU_CntTrailZeros32(CPU_INT32U val)
 {
-#if  (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_32)))
-    CPU_INT32U  val_bit_mask;
-    CPU_DATA    nbr_lead_zeros;
+#if (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_32)))
+    CPU_INT32U val_bit_mask;
+    CPU_DATA nbr_lead_zeros;
 #endif
-    CPU_DATA    nbr_trail_zeros;
+    CPU_DATA nbr_trail_zeros;
 
-
-    if (val == 0u) {                                            /* Rtn ALL val bits as zero'd (see Note #3).            */
+    if (val == 0u)
+    { /* Rtn ALL val bits as zero'd (see Note #3).            */
         return ((CPU_DATA)(CPU_WORD_SIZE_32 * DEF_OCTET_NBR_BITS));
     }
 
-                                                                /* ------------------ ASM-OPTIMIZED ------------------- */
+    /* ------------------ ASM-OPTIMIZED ------------------- */
 #if ((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_32))
     nbr_trail_zeros = CPU_CntTrailZeros((CPU_DATA)val);
 
-#else                                                           /* ------------------- C-OPTIMIZED -------------------- */
-    val_bit_mask    = val & ((CPU_INT32U)~val + 1u);            /* Zero/clr all bits EXCEPT least-sig set bit.          */
-    nbr_lead_zeros  = CPU_CntLeadZeros32(val_bit_mask);         /* Cnt  nbr lead  0s.                                   */
-                                                                /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
+#else /* ------------------- C-OPTIMIZED -------------------- */
+    val_bit_mask = val & ((CPU_INT32U)~val + 1u);      /* Zero/clr all bits EXCEPT least-sig set bit.          */
+    nbr_lead_zeros = CPU_CntLeadZeros32(val_bit_mask); /* Cnt  nbr lead  0s.                                   */
+                                                       /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
     nbr_trail_zeros = ((CPU_DATA)((CPU_WORD_SIZE_32 * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros);
 #endif
-
 
     return (nbr_trail_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1877,37 +1853,35 @@ CPU_DATA  CPU_CntTrailZeros32 (CPU_INT32U  val)
 */
 
 #if (CPU_CFG_DATA_SIZE_MAX >= CPU_WORD_SIZE_64)
-CPU_DATA  CPU_CntTrailZeros64 (CPU_INT64U  val)
+CPU_DATA CPU_CntTrailZeros64(CPU_INT64U val)
 {
-#if  (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
-        (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_64)))
-    CPU_INT64U  val_bit_mask;
-    CPU_DATA    nbr_lead_zeros;
+#if (!((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
+       (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_64)))
+    CPU_INT64U val_bit_mask;
+    CPU_DATA nbr_lead_zeros;
 #endif
-    CPU_DATA    nbr_trail_zeros;
+    CPU_DATA nbr_trail_zeros;
 
-
-    if (val == 0u) {                                            /* Rtn ALL val bits as zero'd (see Note #3).            */
+    if (val == 0u)
+    { /* Rtn ALL val bits as zero'd (see Note #3).            */
         return ((CPU_DATA)(CPU_WORD_SIZE_64 * DEF_OCTET_NBR_BITS));
     }
 
-                                                                /* ------------------ ASM-OPTIMIZED ------------------- */
+    /* ------------------ ASM-OPTIMIZED ------------------- */
 #if ((defined(CPU_CFG_TRAIL_ZEROS_ASM_PRESENT)) && \
      (CPU_CFG_DATA_SIZE >= CPU_WORD_SIZE_64))
     nbr_trail_zeros = CPU_CntTrailZeros((CPU_DATA)val);
 
-#else                                                           /* ------------------- C-OPTIMIZED -------------------- */
-    val_bit_mask    = val & ((CPU_INT64U)~val + 1u);            /* Zero/clr all bits EXCEPT least-sig set bit.          */
-    nbr_lead_zeros  = CPU_CntLeadZeros64(val_bit_mask);         /* Cnt  nbr lead  0s.                                   */
-                                                                /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
+#else /* ------------------- C-OPTIMIZED -------------------- */
+    val_bit_mask = val & ((CPU_INT64U)~val + 1u);      /* Zero/clr all bits EXCEPT least-sig set bit.          */
+    nbr_lead_zeros = CPU_CntLeadZeros64(val_bit_mask); /* Cnt  nbr lead  0s.                                   */
+                                                       /* Calc nbr trail 0s = (nbr val bits - 1) - nbr lead 0s.*/
     nbr_trail_zeros = ((CPU_DATA)((CPU_WORD_SIZE_64 * DEF_OCTET_NBR_BITS) - 1u) - nbr_lead_zeros);
 #endif
-
 
     return (nbr_trail_zeros);
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1924,29 +1898,27 @@ CPU_DATA  CPU_CntTrailZeros64 (CPU_INT64U  val)
 *********************************************************************************************************
 */
 
-CPU_INT08U  CPU_PopCnt32 (CPU_INT32U  value)
+CPU_INT08U CPU_PopCnt32(CPU_INT32U value)
 {
-    CPU_INT32U  even_cnt;
-    CPU_INT32U  odd_cnt;
-    CPU_INT32U  result;
+    CPU_INT32U even_cnt;
+    CPU_INT32U odd_cnt;
+    CPU_INT32U result;
 
+    odd_cnt = (value >> 1u) & CRC_UTIL_POPCNT_MASK01010101_32; /* 2-bits pieces.                                       */
+    result = value - odd_cnt;                                  /* Same result as result=odd_cnt+(value & 0x55555555).  */
 
-    odd_cnt  = (value >> 1u) & CRC_UTIL_POPCNT_MASK01010101_32; /* 2-bits pieces.                                       */
-    result   =  value - odd_cnt;                                /* Same result as result=odd_cnt+(value & 0x55555555).  */
+    even_cnt = result & CRC_UTIL_POPCNT_MASK00110011_32; /* 4-bits pieces.                                       */
+    odd_cnt = (result >> 2u) & CRC_UTIL_POPCNT_MASK00110011_32;
+    result = even_cnt + odd_cnt;
 
-    even_cnt =  result & CRC_UTIL_POPCNT_MASK00110011_32;       /* 4-bits pieces.                                       */
-    odd_cnt  = (result >> 2u) & CRC_UTIL_POPCNT_MASK00110011_32;
-    result   =  even_cnt + odd_cnt;
-
-    even_cnt =  result & CRC_UTIL_POPCNT_MASK00001111_32;       /* 8-bits pieces.                                       */
-    odd_cnt  = (result >> 4u) & CRC_UTIL_POPCNT_MASK00001111_32;
-    result   =  even_cnt + odd_cnt;
+    even_cnt = result & CRC_UTIL_POPCNT_MASK00001111_32; /* 8-bits pieces.                                       */
+    odd_cnt = (result >> 4u) & CRC_UTIL_POPCNT_MASK00001111_32;
+    result = even_cnt + odd_cnt;
 
     result = (result * CRC_UTIL_POPCNT_POWERSOF256_32) >> 24u;
 
     return ((CPU_INT08U)result);
 }
-
 
 /*
 *********************************************************************************************************
@@ -1963,14 +1935,13 @@ CPU_INT08U  CPU_PopCnt32 (CPU_INT32U  value)
 */
 
 #if (CPU_CFG_PERF_MON_EN == DEF_ENABLED)
-void  CPU_StatReset (void)
+void CPU_StatReset(void)
 {
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
     CPU_IntDisMeasMax_cnts = 0u;
 #endif
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -1995,12 +1966,11 @@ void  CPU_StatReset (void)
 */
 
 #if (CPU_CFG_NAME_EN == DEF_ENABLED)
-static  void  CPU_NameInit (void)
+static void CPU_NameInit(void)
 {
     CPU_NameClr();
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -2027,47 +1997,44 @@ static  void  CPU_NameInit (void)
 *********************************************************************************************************
 */
 
-#if ((CPU_CFG_TS_EN     == DEF_ENABLED) || \
+#if ((CPU_CFG_TS_EN == DEF_ENABLED) || \
      (CPU_CFG_TS_TMR_EN == DEF_ENABLED))
-static  void  CPU_TS_Init (void)
+static void CPU_TS_Init(void)
 {
-#if (((CPU_CFG_TS_32_EN    == DEF_ENABLED     )  && \
-      (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_32)) || \
-     ((CPU_CFG_TS_64_EN    == DEF_ENABLED     )  && \
-      (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_64)))
-    CPU_TS_TMR  ts_tmr_cnts;
+#if (((CPU_CFG_TS_32_EN == DEF_ENABLED) &&         \
+      (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_32)) || \
+     ((CPU_CFG_TS_64_EN == DEF_ENABLED) &&         \
+      (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_64)))
+    CPU_TS_TMR ts_tmr_cnts;
 #endif
 
-
-                                                                /* ----------------- INIT CPU TS TMR ------------------ */
+    /* ----------------- INIT CPU TS TMR ------------------ */
 #if (CPU_CFG_TS_TMR_EN == DEF_ENABLED)
-    CPU_TS_TmrFreq_Hz   = 0u;                                   /* Init/clr     ts tmr freq (see Note #1a).             */
-    CPU_TS_TmrInit();                                           /* Init & start ts tmr      (see Note #1b).             */
+    CPU_TS_TmrFreq_Hz = 0u; /* Init/clr     ts tmr freq (see Note #1a).             */
+    CPU_TS_TmrInit();       /* Init & start ts tmr      (see Note #1b).             */
 #endif
 
-
-                                                                /* ------------------- INIT CPU TS -------------------- */
-#if (((CPU_CFG_TS_32_EN    == DEF_ENABLED     )  && \
-      (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_32)) || \
-     ((CPU_CFG_TS_64_EN    == DEF_ENABLED     )  && \
-      (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_64)))
-    ts_tmr_cnts = CPU_TS_TmrRd();                               /* Get init ts tmr val (in ts tmr cnts).                */
+    /* ------------------- INIT CPU TS -------------------- */
+#if (((CPU_CFG_TS_32_EN == DEF_ENABLED) &&         \
+      (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_32)) || \
+     ((CPU_CFG_TS_64_EN == DEF_ENABLED) &&         \
+      (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_64)))
+    ts_tmr_cnts = CPU_TS_TmrRd(); /* Get init ts tmr val (in ts tmr cnts).                */
 #endif
 
-#if  ((CPU_CFG_TS_32_EN    == DEF_ENABLED)  && \
-      (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_32))
-    CPU_TS_32_Accum   = 0u;                                     /* Init 32-bit accum'd ts.                              */
-    CPU_TS_32_TmrPrev = ts_tmr_cnts;                            /* Init 32-bit ts prev tmr val.                         */
+#if ((CPU_CFG_TS_32_EN == DEF_ENABLED) && \
+     (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_32))
+    CPU_TS_32_Accum = 0u;            /* Init 32-bit accum'd ts.                              */
+    CPU_TS_32_TmrPrev = ts_tmr_cnts; /* Init 32-bit ts prev tmr val.                         */
 #endif
 
-#if  ((CPU_CFG_TS_64_EN    == DEF_ENABLED)  && \
-      (CPU_CFG_TS_TMR_SIZE <  CPU_WORD_SIZE_64))
-    CPU_TS_64_Accum   = 0u;                                     /* Init 64-bit accum'd ts.                              */
-    CPU_TS_64_TmrPrev = ts_tmr_cnts;                            /* Init 64-bit ts prev tmr val.                         */
+#if ((CPU_CFG_TS_64_EN == DEF_ENABLED) && \
+     (CPU_CFG_TS_TMR_SIZE < CPU_WORD_SIZE_64))
+    CPU_TS_64_Accum = 0u;            /* Init 64-bit accum'd ts.                              */
+    CPU_TS_64_TmrPrev = ts_tmr_cnts; /* Init 64-bit ts prev tmr val.                         */
 #endif
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -2105,40 +2072,39 @@ static  void  CPU_TS_Init (void)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-static  void  CPU_IntDisMeasInit (void)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+static void CPU_IntDisMeasInit(void)
 {
-    CPU_TS_TMR  time_meas_tot_cnts;
-    CPU_INT16U  i;
+    CPU_TS_TMR time_meas_tot_cnts;
+    CPU_INT16U i;
     CPU_SR_ALLOC();
 
-                                                                /* ----------- INIT INT DIS TIME MEAS CTRLS ----------- */
-    CPU_IntDisMeasCtr         = 0u;
-    CPU_IntDisNestCtr         = 0u;
-    CPU_IntDisMeasStart_cnts  = 0u;
-    CPU_IntDisMeasStop_cnts   = 0u;
+    /* ----------- INIT INT DIS TIME MEAS CTRLS ----------- */
+    CPU_IntDisMeasCtr = 0u;
+    CPU_IntDisNestCtr = 0u;
+    CPU_IntDisMeasStart_cnts = 0u;
+    CPU_IntDisMeasStop_cnts = 0u;
     CPU_IntDisMeasMaxCur_cnts = 0u;
-    CPU_IntDisMeasMax_cnts    = 0u;
-    CPU_IntDisMeasOvrhd_cnts  = 0u;
+    CPU_IntDisMeasMax_cnts = 0u;
+    CPU_IntDisMeasOvrhd_cnts = 0u;
 
-                                                                /* ----------- CALC INT DIS TIME MEAS OVRHD ----------- */
+    /* ----------- CALC INT DIS TIME MEAS OVRHD ----------- */
     time_meas_tot_cnts = 0u;
-    CPU_INT_DIS();                                              /* Ints MUST be dis'd for ovrhd calc (see Note #3b).    */
-    for (i = 0u; i < CPU_CFG_INT_DIS_MEAS_OVRHD_NBR; i++) {
+    CPU_INT_DIS(); /* Ints MUST be dis'd for ovrhd calc (see Note #3b).    */
+    for (i = 0u; i < CPU_CFG_INT_DIS_MEAS_OVRHD_NBR; i++)
+    {
         CPU_IntDisMeasMaxCur_cnts = 0u;
-        CPU_IntDisMeasStart();                                  /* Perform multiple consecutive start/stop time meas's  */
+        CPU_IntDisMeasStart(); /* Perform multiple consecutive start/stop time meas's  */
         CPU_IntDisMeasStop();
-        time_meas_tot_cnts += CPU_IntDisMeasMaxCur_cnts;        /* ...       & sum time meas max's                  ... */
+        time_meas_tot_cnts += CPU_IntDisMeasMaxCur_cnts; /* ...       & sum time meas max's                  ... */
     }
-                                                                /* ... to calc avg time meas ovrhd (see Note #3a).      */
-    CPU_IntDisMeasOvrhd_cnts  = (time_meas_tot_cnts + (CPU_CFG_INT_DIS_MEAS_OVRHD_NBR / 2u))
-                                                    /  CPU_CFG_INT_DIS_MEAS_OVRHD_NBR;
-    CPU_IntDisMeasMaxCur_cnts =  0u;                            /* Reset max ints dis'd times.                          */
-    CPU_IntDisMeasMax_cnts    =  0u;
+    /* ... to calc avg time meas ovrhd (see Note #3a).      */
+    CPU_IntDisMeasOvrhd_cnts = (time_meas_tot_cnts + (CPU_CFG_INT_DIS_MEAS_OVRHD_NBR / 2u)) / CPU_CFG_INT_DIS_MEAS_OVRHD_NBR;
+    CPU_IntDisMeasMaxCur_cnts = 0u; /* Reset max ints dis'd times.                          */
+    CPU_IntDisMeasMax_cnts = 0u;
     CPU_INT_EN();
 }
 #endif
-
 
 /*
 *********************************************************************************************************
@@ -2235,20 +2201,21 @@ static  void  CPU_IntDisMeasInit (void)
 *********************************************************************************************************
 */
 
-#ifdef  CPU_CFG_INT_DIS_MEAS_EN
-static  CPU_TS_TMR  CPU_IntDisMeasMaxCalc (CPU_TS_TMR  time_tot_cnts)
+#ifdef CPU_CFG_INT_DIS_MEAS_EN
+static CPU_TS_TMR CPU_IntDisMeasMaxCalc(CPU_TS_TMR time_tot_cnts)
 {
-    CPU_TS_TMR  time_max_cnts;
-
+    CPU_TS_TMR time_max_cnts;
 
     time_max_cnts = time_tot_cnts;
-    if (time_max_cnts >  CPU_IntDisMeasOvrhd_cnts) {            /* If       max ints dis'd time >  ovrhd time, ...      */
-        time_max_cnts -= CPU_IntDisMeasOvrhd_cnts;              /* ... adj  max ints dis'd time by ovrhd time; ...      */
-    } else {                                                    /* ... else max ints dis'd time <  ovrhd time, ...      */
-        time_max_cnts  = 0u;                                    /* ... clr  max ints dis'd time (see Note #2).          */
+    if (time_max_cnts > CPU_IntDisMeasOvrhd_cnts)
+    {                                              /* If       max ints dis'd time >  ovrhd time, ...      */
+        time_max_cnts -= CPU_IntDisMeasOvrhd_cnts; /* ... adj  max ints dis'd time by ovrhd time; ...      */
+    }
+    else
+    {                       /* ... else max ints dis'd time <  ovrhd time, ...      */
+        time_max_cnts = 0u; /* ... clr  max ints dis'd time (see Note #2).          */
     }
 
     return (time_max_cnts);
 }
 #endif
-

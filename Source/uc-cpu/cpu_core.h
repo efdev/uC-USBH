@@ -93,8 +93,8 @@
 *********************************************************************************************************
 */
 
-#include  <cpu.h>
-#include  <lib_def.h>
+#include  <usbh_cpu.h>
+// #include  <lib_def.h>
 #include  <cpu_cfg.h>
 
 #if (CPU_CFG_NAME_EN == DEF_ENABLED)
@@ -1011,9 +1011,9 @@ CPU_INT64U  CPU_TS64_to_uSec(CPU_TS64  ts_cnts);
 */
 
                                                                 /* See 'cpu_core.h  Note #1a'.                          */
-#if     (LIB_VERSION < 13802u)
-#error  "LIB_VERSION  [SHOULD be >= V1.38.02]"
-#endif
+// #if     (LIB_VERSION < 13802u)
+// #error  "LIB_VERSION  [SHOULD be >= V1.38.02]"
+// #endif
 
 
 /*
