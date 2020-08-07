@@ -94,8 +94,8 @@
 *********************************************************************************************************
 */
 
-#include  <cpu.h>
-#include  <cpu_core.h>
+#include  <usbh_cpu.h>
+// #include  <cpu_core.h>
 
 #include  <lib_def.h>
 #include  <lib_cfg.h>
@@ -1422,9 +1422,9 @@ CPU_SIZE_T         Mem_DynPoolBlkNbrAvailGet(       MEM_DYN_POOL      *p_pool,
 */
 
                                                                 /* See 'lib_mem.h  Note #2a'.                           */
-#if     (CPU_CORE_VERSION < 127u)
-#error  "CPU_CORE_VERSION  [SHOULD be >= V1.27]"
-#endif
+// #if     (CPU_CORE_VERSION < 127u)
+// #error  "CPU_CORE_VERSION  [SHOULD be >= V1.27]"
+// #endif
 
 
 /*

@@ -8,6 +8,7 @@
 #define UC_USBH_CPU_H_
 
 #include <zephyr.h>
+#include <sys/math_extras.h>
 
 typedef void CPU_VOID;
 typedef char CPU_CHAR;
@@ -26,6 +27,25 @@ typedef volatile uint8_t CPU_REG08;
 typedef volatile uint16_t CPU_REG16;
 typedef volatile uint32_t CPU_REG32;
 typedef k_thread_stack_t CPU_STK;
+
+/* from cpu module */
+
+#define  CPU_ENDIAN_TYPE_NONE                      0u
+#define  CPU_ENDIAN_TYPE_BIG                       1u   /* Big-   endian word order (see Note #1a).                     */
+#define  CPU_ENDIAN_TYPE_LITTLE                    2u   /* Little-endian word order (see Note #1b).                     */
+
+#define CPU_WORD_SIZE_08 1u
+#define CPU_WORD_SIZE_16 2u
+#define CPU_WORD_SIZE_32 4u
+#define CPU_WORD_SIZE_64 8u
+
+#define CPU_SW_EXCEPTION(pff)
+
+#define CPU_CntLeadZeros(val) u32_count_leading_zeros(val)
+#define CPU_CntTrailZeros(val) u32_count_trailing_zeros(val)
+
+/* ****** */
+
 #define DEF_TRUE true
 #define DEF_FALSE false
 

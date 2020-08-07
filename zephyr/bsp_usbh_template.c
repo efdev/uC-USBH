@@ -33,7 +33,7 @@
 */
 
 #include "bsp_usbh_template.h"
-#include <cpu.h>
+#include <usbh_cpu.h>
 #include <lib_def.h>
 
 #include <soc.h>

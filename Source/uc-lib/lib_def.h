@@ -118,8 +118,8 @@
 *********************************************************************************************************
 */
 
-#include  <cpu_def.h>
-#include  <cpu.h>
+// #include  <cpu_def.h>
+#include  <usbh_cpu.h>
 
 
 /*
@@ -403,8 +403,8 @@
 
 #else
 
-#error  "CPU_CFG_DATA_SIZE  illegally #defined in 'cpu.h'      "
-#error  "                   [See 'cpu.h  CONFIGURATION ERRORS']"
+// #error  "CPU_CFG_DATA_SIZE  illegally #defined in 'cpu.h'      "
+// #error  "                   [See 'cpu.h  CONFIGURATION ERRORS']"
 
 #endif
 
@@ -1338,9 +1338,9 @@ typedef enum lib_err {
 */
 
                                                                 /* See 'lib_def.h  Note #1a'.                           */
-#if     (CPU_CORE_VERSION < 12900u)
-#error  "CPU_CORE_VERSION  [SHOULD be >= V1.29.00]"
-#endif
+// #if     (CPU_CORE_VERSION < 12900u)
+// #error  "CPU_CORE_VERSION  [SHOULD be >= V1.29.00]"
+// #endif
 
 
 /*
