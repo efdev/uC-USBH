@@ -96,8 +96,8 @@
 
 #include  <usbh_cpu.h>
 // #include  <cpu_core.h>
-
-#include  <lib_def.h>
+// #include  <lib_def.h>
+#include <usbh_os.h>
 #include  <lib_cfg.h>
 
 
@@ -123,7 +123,38 @@
 #define  LIB_MEM_PADDING_ALIGN_NONE                       1u
 
 #define  LIB_MEM_BLK_QTY_UNLIMITED                        0u
+typedef enum lib_err
+{
 
+    LIB_ERR_NONE = 0u,
+
+    LIB_MEM_ERR_NONE = 10000u,
+    LIB_MEM_ERR_NULL_PTR = 10001u, /* Ptr arg(s) passed NULL ptr(s).                       */
+
+    LIB_MEM_ERR_INVALID_MEM_SIZE = 10100u,         /* Invalid mem     size.                                */
+    LIB_MEM_ERR_INVALID_MEM_ALIGN = 10101u,        /* Invalid mem     align.                               */
+    LIB_MEM_ERR_INVALID_SEG_SIZE = 10110u,         /* Invalid mem seg size.                                */
+    LIB_MEM_ERR_INVALID_SEG_OVERLAP = 10111u,      /* Invalid mem seg overlaps other mem seg(s).           */
+    LIB_MEM_ERR_INVALID_SEG_EXISTS = 10112u,       /* Invalid mem seg already exists.                      */
+    LIB_MEM_ERR_INVALID_POOL = 10120u,             /* Invalid mem pool.                                    */
+    LIB_MEM_ERR_INVALID_BLK_NBR = 10130u,          /* Invalid mem pool blk nbr.                            */
+    LIB_MEM_ERR_INVALID_BLK_SIZE = 10131u,         /* Invalid mem pool blk size.                           */
+    LIB_MEM_ERR_INVALID_BLK_ALIGN = 10132u,        /* Invalid mem pool blk align.                          */
+    LIB_MEM_ERR_INVALID_BLK_IX = 10133u,           /* Invalid mem pool ix.                                 */
+    LIB_MEM_ERR_INVALID_BLK_ADDR = 10135u,         /* Invalid mem pool blk addr.                           */
+    LIB_MEM_ERR_INVALID_BLK_ADDR_IN_POOL = 10136u, /* Mem pool blk addr already in mem pool.               */
+
+    LIB_MEM_ERR_SEG_EMPTY = 10200u,      /* Mem seg  empty; i.e. NO avail mem in seg.            */
+    LIB_MEM_ERR_SEG_OVF = 10201u,        /* Mem seg  ovf;   i.e. req'd mem ovfs rem mem in seg.  */
+    LIB_MEM_ERR_POOL_FULL = 10205u,      /* Mem pool full;  i.e. all mem blks avail in mem pool. */
+    LIB_MEM_ERR_POOL_EMPTY = 10206u,     /* Mem pool empty; i.e. NO  mem blks avail in mem pool. */
+    LIB_MEM_ERR_POOL_UNLIMITED = 10207u, /* Mem pool is unlimited.                               */
+
+    LIB_MEM_ERR_HEAP_EMPTY = 10210u,    /* Heap seg empty; i.e. NO avail mem in heap.           */
+    LIB_MEM_ERR_HEAP_OVF = 10211u,      /* Heap seg ovf;   i.e. req'd mem ovfs rem mem in heap. */
+    LIB_MEM_ERR_HEAP_NOT_FOUND = 10215u /* Heap seg NOT found.                                  */
+
+} LIB_ERR;
 
 /*
 *********************************************************************************************************
@@ -575,17 +606,17 @@ typedef  struct  mem_dyn_pool {                                 /* -------------
 
 #define  MEM_VAL_GET_INT08U_LITTLE(addr)        ((CPU_INT08U) ((CPU_INT08U)(((CPU_INT08U)(*(((CPU_INT08U *)(addr)) + 0))) << (0u * DEF_OCTET_NBR_BITS))))
 
-#define  MEM_VAL_GET_INT16U_LITTLE(addr)        ((CPU_INT16U)(((CPU_INT16U)(((CPU_INT16U)(*(((CPU_INT08U *)(addr)) + 0))) << (0u * DEF_OCTET_NBR_BITS))) + \
-                                                              ((CPU_INT16U)(((CPU_INT16U)(*(((CPU_INT08U *)(addr)) + 1))) << (1u * DEF_OCTET_NBR_BITS)))))
+// #define  MEM_VAL_GET_INT16U_LITTLE(addr)        ((CPU_INT16U)(((CPU_INT16U)(((CPU_INT16U)(*(((CPU_INT08U *)(addr)) + 0))) << (0u * DEF_OCTET_NBR_BITS))) + \
+//                                                               ((CPU_INT16U)(((CPU_INT16U)(*(((CPU_INT08U *)(addr)) + 1))) << (1u * DEF_OCTET_NBR_BITS)))))
 
 #define  MEM_VAL_GET_INT24U_LITTLE(addr)        ((CPU_INT32U)(((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 0))) << (0u * DEF_OCTET_NBR_BITS))) + \
                                                               ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 1))) << (1u * DEF_OCTET_NBR_BITS))) + \
                                                               ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 2))) << (2u * DEF_OCTET_NBR_BITS)))))
 
-#define  MEM_VAL_GET_INT32U_LITTLE(addr)        ((CPU_INT32U)(((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 0))) << (0u * DEF_OCTET_NBR_BITS))) + \
-                                                              ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 1))) << (1u * DEF_OCTET_NBR_BITS))) + \
-                                                              ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 2))) << (2u * DEF_OCTET_NBR_BITS))) + \
-                                                              ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 3))) << (3u * DEF_OCTET_NBR_BITS)))))
+// #define  MEM_VAL_GET_INT32U_LITTLE(addr)        ((CPU_INT32U)(((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 0))) << (0u * DEF_OCTET_NBR_BITS))) + \
+//                                                               ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 1))) << (1u * DEF_OCTET_NBR_BITS))) + \
+//                                                               ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 2))) << (2u * DEF_OCTET_NBR_BITS))) + \
+//                                                               ((CPU_INT32U)(((CPU_INT32U)(*(((CPU_INT08U *)(addr)) + 3))) << (3u * DEF_OCTET_NBR_BITS)))))
 
 
 
@@ -598,10 +629,10 @@ typedef  struct  mem_dyn_pool {                                 /* -------------
 
 #elif   (CPU_CFG_ENDIAN_TYPE == CPU_ENDIAN_TYPE_LITTLE)
 
-#define  MEM_VAL_GET_INT08U(addr)                               MEM_VAL_GET_INT08U_LITTLE(addr)
-#define  MEM_VAL_GET_INT16U(addr)                               MEM_VAL_GET_INT16U_LITTLE(addr)
-#define  MEM_VAL_GET_INT24U(addr)                               MEM_VAL_GET_INT24U_LITTLE(addr)
-#define  MEM_VAL_GET_INT32U(addr)                               MEM_VAL_GET_INT32U_LITTLE(addr)
+// #define  MEM_VAL_GET_INT08U(addr)                               MEM_VAL_GET_INT08U_LITTLE(addr)
+// #define  MEM_VAL_GET_INT16U(addr)                               MEM_VAL_GET_INT16U_LITTLE(addr)
+// #define  MEM_VAL_GET_INT24U(addr)                               MEM_VAL_GET_INT24U_LITTLE(addr)
+// #define  MEM_VAL_GET_INT32U(addr)                               MEM_VAL_GET_INT32U_LITTLE(addr)
 
 #else                                                           /* See Note #6.                                         */
 
@@ -831,10 +862,10 @@ typedef  struct  mem_dyn_pool {                                 /* -------------
                                                                     (*(((CPU_INT08U *)(addr_dest)) + 1)) = (*(((CPU_INT08U *)(addr_src)) + 1)); \
                                                                     (*(((CPU_INT08U *)(addr_dest)) + 2)) = (*(((CPU_INT08U *)(addr_src)) + 0)); } while (0)
 
-#define  MEM_VAL_COPY_GET_INT32U_BIG(addr_dest, addr_src)      do { (*(((CPU_INT08U *)(addr_dest)) + 0)) = (*(((CPU_INT08U *)(addr_src)) + 3)); \
-                                                                    (*(((CPU_INT08U *)(addr_dest)) + 1)) = (*(((CPU_INT08U *)(addr_src)) + 2)); \
-                                                                    (*(((CPU_INT08U *)(addr_dest)) + 2)) = (*(((CPU_INT08U *)(addr_src)) + 1)); \
-                                                                    (*(((CPU_INT08U *)(addr_dest)) + 3)) = (*(((CPU_INT08U *)(addr_src)) + 0)); } while (0)
+// #define  MEM_VAL_COPY_GET_INT32U_BIG(addr_dest, addr_src)      do { (*(((CPU_INT08U *)(addr_dest)) + 0)) = (*(((CPU_INT08U *)(addr_src)) + 3)); \
+//                                                                     (*(((CPU_INT08U *)(addr_dest)) + 1)) = (*(((CPU_INT08U *)(addr_src)) + 2)); \
+//                                                                     (*(((CPU_INT08U *)(addr_dest)) + 2)) = (*(((CPU_INT08U *)(addr_src)) + 1)); \
+//                                                                     (*(((CPU_INT08U *)(addr_dest)) + 3)) = (*(((CPU_INT08U *)(addr_src)) + 0)); } while (0)
 
 
 
@@ -856,7 +887,7 @@ typedef  struct  mem_dyn_pool {                                 /* -------------
 #define  MEM_VAL_COPY_GET_INT08U(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT08U_LITTLE((addr_dest), (addr_src))
 #define  MEM_VAL_COPY_GET_INT16U(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT16U_LITTLE((addr_dest), (addr_src))
 #define  MEM_VAL_COPY_GET_INT24U(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT24U_LITTLE((addr_dest), (addr_src))
-#define  MEM_VAL_COPY_GET_INT32U(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT32U_LITTLE((addr_dest), (addr_src))
+// #define  MEM_VAL_COPY_GET_INT32U(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT32U_LITTLE((addr_dest), (addr_src))
 
 
 #else                                                           /* See Note #7.                                         */
@@ -1068,9 +1099,9 @@ typedef  struct  mem_dyn_pool {                                 /* -------------
 
                                                                 /* See Note #5.                                         */
 #define  MEM_VAL_COPY_SET_INT08U_BIG(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT08U_BIG((addr_dest), (addr_src))
-#define  MEM_VAL_COPY_SET_INT16U_BIG(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT16U_BIG((addr_dest), (addr_src))
+// #define  MEM_VAL_COPY_SET_INT16U_BIG(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT16U_BIG((addr_dest), (addr_src))
 #define  MEM_VAL_COPY_SET_INT24U_BIG(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT24U_BIG((addr_dest), (addr_src))
-#define  MEM_VAL_COPY_SET_INT32U_BIG(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT32U_BIG((addr_dest), (addr_src))
+// #define  MEM_VAL_COPY_SET_INT32U_BIG(addr_dest, addr_src)               MEM_VAL_COPY_GET_INT32U_BIG((addr_dest), (addr_src))
 
 #define  MEM_VAL_COPY_SET_INT08U_LITTLE(addr_dest, addr_src)            MEM_VAL_COPY_GET_INT08U_LITTLE((addr_dest), (addr_src))
 #define  MEM_VAL_COPY_SET_INT16U_LITTLE(addr_dest, addr_src)            MEM_VAL_COPY_GET_INT16U_LITTLE((addr_dest), (addr_src))
@@ -1230,16 +1261,16 @@ typedef  struct  mem_dyn_pool {                                 /* -------------
 void               Mem_Init                 (       void);
 
                                                                 /* ------------------ MEM API  FNCTS ------------------ */
-void               Mem_Clr                  (       void              *pmem,
-                                                    CPU_SIZE_T         size);
+// void               Mem_Clr                  (       void              *pmem,
+//                                                     CPU_SIZE_T         size);
 
-void               Mem_Set                  (       void              *pmem,
-                                                    CPU_INT08U         data_val,
-                                                    CPU_SIZE_T         size);
+// void               Mem_Set                  (       void              *pmem,
+//                                                     CPU_INT08U         data_val,
+//                                                     CPU_SIZE_T         size);
 
-void               Mem_Copy                 (       void              *pdest,
-                                             const  void              *psrc,
-                                                    CPU_SIZE_T         size);
+// void               Mem_Copy                 (       void              *pdest,
+//                                              const  void              *psrc,
+//                                                     CPU_SIZE_T         size);
 
 void               Mem_Move                 (       void              *pdest,
                                              const  void              *psrc,

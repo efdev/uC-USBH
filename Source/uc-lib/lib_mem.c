@@ -49,7 +49,8 @@
 #define    LIB_MEM_MODULE
 #include  "lib_mem.h"
 #include  "lib_math.h"
-#include  "lib_str.h"
+#include <usbh_os.h>
+// #include  "lib_str.h"
 
 /*
 *********************************************************************************************************
@@ -246,13 +247,13 @@ void  Mem_Init (void)
 *********************************************************************************************************
 */
 
-void  Mem_Clr (void        *pmem,
-               CPU_SIZE_T   size)
-{
-    Mem_Set(pmem,
-            0u,                                                 /* See Note #2.                                         */
-            size);
-}
+// void  Mem_Clr (void        *pmem,
+//                CPU_SIZE_T   size)
+// {
+//     Mem_Set(pmem,
+//             0u,                                                 /* See Note #2.                                         */
+//             size);
+// }
 
 
 /*
@@ -287,60 +288,60 @@ void  Mem_Clr (void        *pmem,
 *********************************************************************************************************
 */
 
-void  Mem_Set (void        *pmem,
-               CPU_INT08U   data_val,
-               CPU_SIZE_T   size)
-{
-    CPU_SIZE_T   size_rem;
-    CPU_ALIGN    data_align;
-    CPU_ALIGN   *pmem_align;
-    CPU_INT08U  *pmem_08;
-    CPU_DATA     mem_align_mod;
-    CPU_DATA     i;
+// void  Mem_Set (void        *pmem,
+//                CPU_INT08U   data_val,
+//                CPU_SIZE_T   size)
+// {
+//     CPU_SIZE_T   size_rem;
+//     CPU_ALIGN    data_align;
+//     CPU_ALIGN   *pmem_align;
+//     CPU_INT08U  *pmem_08;
+//     CPU_DATA     mem_align_mod;
+//     CPU_DATA     i;
 
 
-#if (LIB_MEM_CFG_ARG_CHK_EXT_EN == DEF_ENABLED)
-    if (size < 1) {                                             /* See Note #1.                                         */
-        return;
-    }
-    if (pmem == (void *)0) {
-        return;
-    }
-#endif
+// #if (LIB_MEM_CFG_ARG_CHK_EXT_EN == DEF_ENABLED)
+//     if (size < 1) {                                             /* See Note #1.                                         */
+//         return;
+//     }
+//     if (pmem == (void *)0) {
+//         return;
+//     }
+// #endif
 
 
-    data_align = 0u;
-    for (i = 0u; i < sizeof(CPU_ALIGN); i++) {                  /* Fill each data_align octet with data val.            */
-        data_align <<=  DEF_OCTET_NBR_BITS;
-        data_align  |= (CPU_ALIGN)data_val;
-    }
+//     data_align = 0u;
+//     for (i = 0u; i < sizeof(CPU_ALIGN); i++) {                  /* Fill each data_align octet with data val.            */
+//         data_align <<=  DEF_OCTET_NBR_BITS;
+//         data_align  |= (CPU_ALIGN)data_val;
+//     }
 
-    size_rem      =  size;
-    mem_align_mod = (CPU_INT08U)((CPU_ADDR)pmem % sizeof(CPU_ALIGN));   /* See Note #3.                                 */
+//     size_rem      =  size;
+//     mem_align_mod = (CPU_INT08U)((CPU_ADDR)pmem % sizeof(CPU_ALIGN));   /* See Note #3.                                 */
 
-    pmem_08 = (CPU_INT08U *)pmem;
-    if (mem_align_mod != 0u) {                                  /* If leading octets avail,                   ...       */
-        i = mem_align_mod;
-        while ((size_rem > 0) &&                                /* ... start mem buf fill with leading octets ...       */
-               (i        < sizeof(CPU_ALIGN ))) {               /* ... until next CPU_ALIGN word boundary.              */
-           *pmem_08++ = data_val;
-            size_rem -= sizeof(CPU_INT08U);
-            i++;
-        }
-    }
+//     pmem_08 = (CPU_INT08U *)pmem;
+//     if (mem_align_mod != 0u) {                                  /* If leading octets avail,                   ...       */
+//         i = mem_align_mod;
+//         while ((size_rem > 0) &&                                /* ... start mem buf fill with leading octets ...       */
+//                (i        < sizeof(CPU_ALIGN ))) {               /* ... until next CPU_ALIGN word boundary.              */
+//            *pmem_08++ = data_val;
+//             size_rem -= sizeof(CPU_INT08U);
+//             i++;
+//         }
+//     }
 
-    pmem_align = (CPU_ALIGN *)pmem_08;                          /* See Note #2.                                         */
-    while (size_rem >= sizeof(CPU_ALIGN)) {                     /* While mem buf aligned on CPU_ALIGN word boundaries,  */
-       *pmem_align++ = data_align;                              /* ... fill mem buf with    CPU_ALIGN-sized data.       */
-        size_rem    -= sizeof(CPU_ALIGN);
-    }
+//     pmem_align = (CPU_ALIGN *)pmem_08;                          /* See Note #2.                                         */
+//     while (size_rem >= sizeof(CPU_ALIGN)) {                     /* While mem buf aligned on CPU_ALIGN word boundaries,  */
+//        *pmem_align++ = data_align;                              /* ... fill mem buf with    CPU_ALIGN-sized data.       */
+//         size_rem    -= sizeof(CPU_ALIGN);
+//     }
 
-    pmem_08 = (CPU_INT08U *)pmem_align;
-    while (size_rem > 0) {                                      /* Finish mem buf fill with trailing octets.            */
-       *pmem_08++   = data_val;
-        size_rem   -= sizeof(CPU_INT08U);
-    }
-}
+//     pmem_08 = (CPU_INT08U *)pmem_align;
+//     while (size_rem > 0) {                                      /* Finish mem buf fill with trailing octets.            */
+//        *pmem_08++   = data_val;
+//         size_rem   -= sizeof(CPU_INT08U);
+//     }
+// }
 
 
 /*
@@ -394,81 +395,81 @@ void  Mem_Set (void        *pmem,
 *********************************************************************************************************
 */
 
-#if (LIB_MEM_CFG_OPTIMIZE_ASM_EN != DEF_ENABLED)
-void  Mem_Copy (       void        *pdest,
-                const  void        *psrc,
-                       CPU_SIZE_T   size)
-{
-           CPU_SIZE_T    size_rem;
-           CPU_SIZE_T    mem_gap_octets;
-           CPU_ALIGN    *pmem_align_dest;
-    const  CPU_ALIGN    *pmem_align_src;
-           CPU_INT08U   *pmem_08_dest;
-    const  CPU_INT08U   *pmem_08_src;
-           CPU_DATA      i;
-           CPU_DATA      mem_align_mod_dest;
-           CPU_DATA      mem_align_mod_src;
-           CPU_BOOLEAN   mem_aligned;
+// #if (LIB_MEM_CFG_OPTIMIZE_ASM_EN != DEF_ENABLED)
+// void  Mem_Copy (       void        *pdest,
+//                 const  void        *psrc,
+//                        CPU_SIZE_T   size)
+// {
+//            CPU_SIZE_T    size_rem;
+//            CPU_SIZE_T    mem_gap_octets;
+//            CPU_ALIGN    *pmem_align_dest;
+//     const  CPU_ALIGN    *pmem_align_src;
+//            CPU_INT08U   *pmem_08_dest;
+//     const  CPU_INT08U   *pmem_08_src;
+//            CPU_DATA      i;
+//            CPU_DATA      mem_align_mod_dest;
+//            CPU_DATA      mem_align_mod_src;
+//            CPU_BOOLEAN   mem_aligned;
 
 
-#if (LIB_MEM_CFG_ARG_CHK_EXT_EN == DEF_ENABLED)
-    if (size < 1) {                                             /* See Note #1.                                         */
-        return;
-    }
-    if (pdest == (void *)0) {
-        return;
-    }
-    if (psrc  == (void *)0) {
-        return;
-    }
-#endif
+// #if (LIB_MEM_CFG_ARG_CHK_EXT_EN == DEF_ENABLED)
+//     if (size < 1) {                                             /* See Note #1.                                         */
+//         return;
+//     }
+//     if (pdest == (void *)0) {
+//         return;
+//     }
+//     if (psrc  == (void *)0) {
+//         return;
+//     }
+// #endif
 
 
-    size_rem           =  size;
+//     size_rem           =  size;
 
-    pmem_08_dest       = (      CPU_INT08U *)pdest;
-    pmem_08_src        = (const CPU_INT08U *)psrc;
+//     pmem_08_dest       = (      CPU_INT08U *)pdest;
+//     pmem_08_src        = (const CPU_INT08U *)psrc;
 
-    mem_gap_octets     = (CPU_SIZE_T)(pmem_08_src - pmem_08_dest);
+//     mem_gap_octets     = (CPU_SIZE_T)(pmem_08_src - pmem_08_dest);
 
 
-    if (mem_gap_octets >= sizeof(CPU_ALIGN)) {                  /* Avoid bufs overlap.                                  */
-                                                                /* See Note #4.                                         */
-        mem_align_mod_dest = (CPU_INT08U)((CPU_ADDR)pmem_08_dest % sizeof(CPU_ALIGN));
-        mem_align_mod_src  = (CPU_INT08U)((CPU_ADDR)pmem_08_src  % sizeof(CPU_ALIGN));
+//     if (mem_gap_octets >= sizeof(CPU_ALIGN)) {                  /* Avoid bufs overlap.                                  */
+//                                                                 /* See Note #4.                                         */
+//         mem_align_mod_dest = (CPU_INT08U)((CPU_ADDR)pmem_08_dest % sizeof(CPU_ALIGN));
+//         mem_align_mod_src  = (CPU_INT08U)((CPU_ADDR)pmem_08_src  % sizeof(CPU_ALIGN));
 
-        mem_aligned        = (mem_align_mod_dest == mem_align_mod_src) ? DEF_YES : DEF_NO;
+//         mem_aligned        = (mem_align_mod_dest == mem_align_mod_src) ? DEF_YES : DEF_NO;
 
-        if (mem_aligned == DEF_YES) {                           /* If mem bufs' alignment offset equal, ...             */
-                                                                /* ... optimize copy for mem buf alignment.             */
-            if (mem_align_mod_dest != 0u) {                     /* If leading octets avail,                   ...       */
-                i = mem_align_mod_dest;
-                while ((size_rem   >  0) &&                     /* ... start mem buf copy with leading octets ...       */
-                       (i          <  sizeof(CPU_ALIGN ))) {    /* ... until next CPU_ALIGN word boundary.              */
-                   *pmem_08_dest++ = *pmem_08_src++;
-                    size_rem      -=  sizeof(CPU_INT08U);
-                    i++;
-                }
-            }
+//         if (mem_aligned == DEF_YES) {                           /* If mem bufs' alignment offset equal, ...             */
+//                                                                 /* ... optimize copy for mem buf alignment.             */
+//             if (mem_align_mod_dest != 0u) {                     /* If leading octets avail,                   ...       */
+//                 i = mem_align_mod_dest;
+//                 while ((size_rem   >  0) &&                     /* ... start mem buf copy with leading octets ...       */
+//                        (i          <  sizeof(CPU_ALIGN ))) {    /* ... until next CPU_ALIGN word boundary.              */
+//                    *pmem_08_dest++ = *pmem_08_src++;
+//                     size_rem      -=  sizeof(CPU_INT08U);
+//                     i++;
+//                 }
+//             }
 
-            pmem_align_dest = (      CPU_ALIGN *)pmem_08_dest;  /* See Note #3.                                         */
-            pmem_align_src  = (const CPU_ALIGN *)pmem_08_src;
-            while (size_rem      >=  sizeof(CPU_ALIGN)) {       /* While mem bufs aligned on CPU_ALIGN word boundaries, */
-               *pmem_align_dest++ = *pmem_align_src++;          /* ... copy psrc to pdest with CPU_ALIGN-sized words.   */
-                size_rem         -=  sizeof(CPU_ALIGN);
-            }
+//             pmem_align_dest = (      CPU_ALIGN *)pmem_08_dest;  /* See Note #3.                                         */
+//             pmem_align_src  = (const CPU_ALIGN *)pmem_08_src;
+//             while (size_rem      >=  sizeof(CPU_ALIGN)) {       /* While mem bufs aligned on CPU_ALIGN word boundaries, */
+//                *pmem_align_dest++ = *pmem_align_src++;          /* ... copy psrc to pdest with CPU_ALIGN-sized words.   */
+//                 size_rem         -=  sizeof(CPU_ALIGN);
+//             }
 
-            pmem_08_dest = (      CPU_INT08U *)pmem_align_dest;
-            pmem_08_src  = (const CPU_INT08U *)pmem_align_src;
-        }
-    }
+//             pmem_08_dest = (      CPU_INT08U *)pmem_align_dest;
+//             pmem_08_src  = (const CPU_INT08U *)pmem_align_src;
+//         }
+//     }
 
-    while (size_rem > 0) {                                      /* For unaligned mem bufs or trailing octets, ...       */
-       *pmem_08_dest++ = *pmem_08_src++;                        /* ... copy psrc to pdest by octets.                    */
-        size_rem      -=  sizeof(CPU_INT08U);
-    }
-}
-#endif
+//     while (size_rem > 0) {                                      /* For unaligned mem bufs or trailing octets, ...       */
+//        *pmem_08_dest++ = *pmem_08_src++;                        /* ... copy psrc to pdest by octets.                    */
+//         size_rem      -=  sizeof(CPU_INT08U);
+//     }
+// }
+// #endif
 
 
 /*

@@ -34,7 +34,7 @@
 
 #include "bsp_usbh_template.h"
 #include <usbh_cpu.h>
-#include <lib_def.h>
+// #include <lib_def.h>
 
 #include <soc.h>
 #include <drivers/pinmux.h>

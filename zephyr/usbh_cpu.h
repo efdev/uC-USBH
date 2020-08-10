@@ -30,9 +30,9 @@ typedef k_thread_stack_t CPU_STK;
 
 /* from cpu module */
 
-#define  CPU_ENDIAN_TYPE_NONE                      0u
-#define  CPU_ENDIAN_TYPE_BIG                       1u   /* Big-   endian word order (see Note #1a).                     */
-#define  CPU_ENDIAN_TYPE_LITTLE                    2u   /* Little-endian word order (see Note #1b).                     */
+#define CPU_ENDIAN_TYPE_NONE 0u
+#define CPU_ENDIAN_TYPE_BIG 1u    /* Big-   endian word order (see Note #1a).                     */
+#define CPU_ENDIAN_TYPE_LITTLE 2u /* Little-endian word order (see Note #1b).                     */
 
 #define CPU_WORD_SIZE_08 1u
 #define CPU_WORD_SIZE_16 2u
@@ -66,7 +66,13 @@ typedef k_thread_stack_t CPU_STK;
 #define CPU_CFG_DATA_SIZE CPU_WORD_SIZE_32     /* Defines CPU data    word size  (in octets).          */
 #define CPU_CFG_DATA_SIZE_MAX CPU_WORD_SIZE_32 /* Defines CPU maximum word size  (in octets).          */
 
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define CPU_CFG_ENDIAN_TYPE CPU_ENDIAN_TYPE_LITTLE
+#elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+#define CPU_CFG_ENDIAN_TYPE CPU_ENDIAN_TYPE_BIG
+#else
+#error "Unknown byte order"
+#endif
 
 typedef CPU_INT32U CPU_ADDR;
 typedef CPU_INT32U CPU_DATA;
