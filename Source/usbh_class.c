@@ -80,7 +80,7 @@ static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
 static void USBH_ClassNotify(USBH_DEV *p_dev,
                              USBH_IF *p_if,
                              void *p_class_dev,
-                             CPU_BOOLEAN is_conn);
+                             CPU_INT08U is_conn);
 
 /*
 *********************************************************************************************************
@@ -483,6 +483,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 
 void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
 {
+    LOG_ERR("disconnect class driver");
     CPU_INT08U if_ix;
     CPU_INT08U nbr_ifs;
     USBH_CFG *p_cfg;
@@ -497,6 +498,7 @@ void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
         if ((p_class_drv != DEF_NULL) &&
             (p_class_drv->Disconn != DEF_NULL))
         {
+            LOG_ERR("notify class");
             USBH_ClassNotify(p_dev,
                              p_if,
                              p_dev->ClassDevPtr,
@@ -528,6 +530,7 @@ void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
             if ((p_class_drv != DEF_NULL) &&
                 (p_class_drv->Disconn != DEF_NULL))
             {
+                LOG_ERR("notify class");
                 USBH_ClassNotify(p_dev,
                                  p_if,
                                  p_if->ClassDevPtr,
@@ -674,7 +677,7 @@ static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
 static void USBH_ClassNotify(USBH_DEV *p_dev,
                              USBH_IF *p_if,
                              void *p_class_dev,
-                             CPU_BOOLEAN is_conn)
+                             CPU_INT08U is_conn)
 {
     USBH_CLASS_DRV_REG *p_class_drv_reg;
 
