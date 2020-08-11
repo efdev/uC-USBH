@@ -1032,11 +1032,11 @@ static void USBH_ATSAMX_HCD_EP_Close(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 	{
 		Mem_PoolBlkFree(&ATSAMX_DrvMemPool, p_ep->URB.DMA_BufPtr,
 						&err_lib);
-		if (err_lib != LIB_MEM_ERR_NONE)
-		{
-			*p_err = USBH_ERR_HC_ALLOC;
-			return;
-		}
+		// if (err_lib != LIB_MEM_ERR_NONE)
+		// {
+		// 	*p_err = USBH_ERR_HC_ALLOC;
+		// 	return;
+		// }
 		p_ep->URB.DMA_BufPtr = (void *)0u;
 	}
 
@@ -1342,10 +1342,10 @@ static void USBH_ATSAMX_HCD_URB_Complete(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 	CPU_CRITICAL_EXIT();
 
 	Mem_PoolBlkFree(&ATSAMX_DrvMemPool, p_urb->DMA_BufPtr, &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
-	{
-		*p_err = USBH_ERR_HC_ALLOC;
-	}
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	*p_err = USBH_ERR_HC_ALLOC;
+	// }
 	p_urb->DMA_BufPtr = (void *)0u;
 
 	p_drv_data->PipeTbl[pipe_nbr].EP_Addr = ATSAMX_DFLT_EP_ADDR;
