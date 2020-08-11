@@ -41,11 +41,13 @@
 
 #include <usbh_cpu.h>
 // #include  <lib_def.h>
-#include <lib_mem.h>
+// #include <lib_mem.h>
 #include "usbh_err.h"
 #include <zephyr.h>
+#include <kernel.h>
 #include <string.h>
 #include <sys/byteorder.h>
+// #include "usbh_hc_cfg.h"
 /*
 *********************************************************************************************************
 *                                               EXTERNS
@@ -84,38 +86,38 @@
 #define DEF_FAIL 0u
 #define DEF_OK 1u
 
-// typedef enum lib_err
-// {
+typedef enum lib_err
+{
 
-//     LIB_ERR_NONE = 0u,
+    LIB_ERR_NONE = 0u,
 
-//     LIB_MEM_ERR_NONE = 10000u,
-//     LIB_MEM_ERR_NULL_PTR = 10001u, /* Ptr arg(s) passed NULL ptr(s).                       */
+    LIB_MEM_ERR_NONE = 10000u,
+    LIB_MEM_ERR_NULL_PTR = 10001u, /* Ptr arg(s) passed NULL ptr(s).                       */
 
-//     LIB_MEM_ERR_INVALID_MEM_SIZE = 10100u,         /* Invalid mem     size.                                */
-//     LIB_MEM_ERR_INVALID_MEM_ALIGN = 10101u,        /* Invalid mem     align.                               */
-//     LIB_MEM_ERR_INVALID_SEG_SIZE = 10110u,         /* Invalid mem seg size.                                */
-//     LIB_MEM_ERR_INVALID_SEG_OVERLAP = 10111u,      /* Invalid mem seg overlaps other mem seg(s).           */
-//     LIB_MEM_ERR_INVALID_SEG_EXISTS = 10112u,       /* Invalid mem seg already exists.                      */
-//     LIB_MEM_ERR_INVALID_POOL = 10120u,             /* Invalid mem pool.                                    */
-//     LIB_MEM_ERR_INVALID_BLK_NBR = 10130u,          /* Invalid mem pool blk nbr.                            */
-//     LIB_MEM_ERR_INVALID_BLK_SIZE = 10131u,         /* Invalid mem pool blk size.                           */
-//     LIB_MEM_ERR_INVALID_BLK_ALIGN = 10132u,        /* Invalid mem pool blk align.                          */
-//     LIB_MEM_ERR_INVALID_BLK_IX = 10133u,           /* Invalid mem pool ix.                                 */
-//     LIB_MEM_ERR_INVALID_BLK_ADDR = 10135u,         /* Invalid mem pool blk addr.                           */
-//     LIB_MEM_ERR_INVALID_BLK_ADDR_IN_POOL = 10136u, /* Mem pool blk addr already in mem pool.               */
+    LIB_MEM_ERR_INVALID_MEM_SIZE = 10100u,         /* Invalid mem     size.                                */
+    LIB_MEM_ERR_INVALID_MEM_ALIGN = 10101u,        /* Invalid mem     align.                               */
+    LIB_MEM_ERR_INVALID_SEG_SIZE = 10110u,         /* Invalid mem seg size.                                */
+    LIB_MEM_ERR_INVALID_SEG_OVERLAP = 10111u,      /* Invalid mem seg overlaps other mem seg(s).           */
+    LIB_MEM_ERR_INVALID_SEG_EXISTS = 10112u,       /* Invalid mem seg already exists.                      */
+    LIB_MEM_ERR_INVALID_POOL = 10120u,             /* Invalid mem pool.                                    */
+    LIB_MEM_ERR_INVALID_BLK_NBR = 10130u,          /* Invalid mem pool blk nbr.                            */
+    LIB_MEM_ERR_INVALID_BLK_SIZE = 10131u,         /* Invalid mem pool blk size.                           */
+    LIB_MEM_ERR_INVALID_BLK_ALIGN = 10132u,        /* Invalid mem pool blk align.                          */
+    LIB_MEM_ERR_INVALID_BLK_IX = 10133u,           /* Invalid mem pool ix.                                 */
+    LIB_MEM_ERR_INVALID_BLK_ADDR = 10135u,         /* Invalid mem pool blk addr.                           */
+    LIB_MEM_ERR_INVALID_BLK_ADDR_IN_POOL = 10136u, /* Mem pool blk addr already in mem pool.               */
 
-//     LIB_MEM_ERR_SEG_EMPTY = 10200u,      /* Mem seg  empty; i.e. NO avail mem in seg.            */
-//     LIB_MEM_ERR_SEG_OVF = 10201u,        /* Mem seg  ovf;   i.e. req'd mem ovfs rem mem in seg.  */
-//     LIB_MEM_ERR_POOL_FULL = 10205u,      /* Mem pool full;  i.e. all mem blks avail in mem pool. */
-//     LIB_MEM_ERR_POOL_EMPTY = 10206u,     /* Mem pool empty; i.e. NO  mem blks avail in mem pool. */
-//     LIB_MEM_ERR_POOL_UNLIMITED = 10207u, /* Mem pool is unlimited.                               */
+    LIB_MEM_ERR_SEG_EMPTY = 10200u,      /* Mem seg  empty; i.e. NO avail mem in seg.            */
+    LIB_MEM_ERR_SEG_OVF = 10201u,        /* Mem seg  ovf;   i.e. req'd mem ovfs rem mem in seg.  */
+    LIB_MEM_ERR_POOL_FULL = 10205u,      /* Mem pool full;  i.e. all mem blks avail in mem pool. */
+    LIB_MEM_ERR_POOL_EMPTY = 10206u,     /* Mem pool empty; i.e. NO  mem blks avail in mem pool. */
+    LIB_MEM_ERR_POOL_UNLIMITED = 10207u, /* Mem pool is unlimited.                               */
 
-//     LIB_MEM_ERR_HEAP_EMPTY = 10210u,    /* Heap seg empty; i.e. NO avail mem in heap.           */
-//     LIB_MEM_ERR_HEAP_OVF = 10211u,      /* Heap seg ovf;   i.e. req'd mem ovfs rem mem in heap. */
-//     LIB_MEM_ERR_HEAP_NOT_FOUND = 10215u /* Heap seg NOT found.                                  */
+    LIB_MEM_ERR_HEAP_EMPTY = 10210u,    /* Heap seg empty; i.e. NO avail mem in heap.           */
+    LIB_MEM_ERR_HEAP_OVF = 10211u,      /* Heap seg ovf;   i.e. req'd mem ovfs rem mem in heap. */
+    LIB_MEM_ERR_HEAP_NOT_FOUND = 10215u /* Heap seg NOT found.                                  */
 
-// } LIB_ERR;
+} LIB_ERR;
 
 /*
 *********************************************************************************************************
@@ -131,7 +133,7 @@ typedef CPU_INT32U USBH_HTMR;       /* Handle on timers.                        
 
 typedef k_thread_entry_t USBH_TASK_FNCT; /* Task function.                                       */
 
-// typedef struct k_mem_pool MEM_POOL;
+typedef struct k_mem_pool MEM_POOL;
 
 /*
 *********************************************************************************************************
@@ -144,6 +146,9 @@ typedef k_thread_entry_t USBH_TASK_FNCT; /* Task function.                      
 *                                               MACRO'S
 *********************************************************************************************************
 */
+#define Mem_HeapAlloc(size, align, octeds, err) k_malloc(size);
+#define Mem_PoolBlkGet(p_pool, size, err) k_mem_pool_malloc(p_pool, size)
+#define Mem_PoolBlkFree(p_pool, p_buf, err) k_free(p_buf)
 #define Mem_Copy(dest, src, size) memcpy(dest, src, size)
 #define Mem_Clr(mem, size) memset(mem, 0, size)
 #define Mem_Set(mem, val, size) memset(mem, val, size)

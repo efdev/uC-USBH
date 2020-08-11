@@ -69,15 +69,17 @@
 *                                       LOCAL GLOBAL VARIABLES
 *********************************************************************************************************
 */
-
+#define USBH_DATA_BUF_MAX_LEN 1024
+#define USBH_MAX_NBR_EP_BULK_OPEN 2
+#define USBH_MAX_NBR_EP_INTR_OPEN 2
 USBH_HC_CFG  USBH_HC_TemplateCfg = {
     (CPU_ADDR)0x41005000,                                      /* Base addr of host controller hw registers.           */
     (CPU_ADDR)0x00000000u,                                      /* Base addr of host controller dedicated mem.          */
               0u,                                               /* Size      of host controller dedicated mem.          */
               DEF_ENABLED,                                      /* Does HC can access sys mem?                          */
-              1024u,                                            /* Data buf max len.                                    */
-              2u,                                               /* Max nbr opened bulk EP.                              */
-              2u,                                               /* Max nbr opened intr EP.                              */
+              USBH_DATA_BUF_MAX_LEN,                                            /* Data buf max len.                                    */
+              USBH_MAX_NBR_EP_BULK_OPEN,                                               /* Max nbr opened bulk EP.                              */
+              USBH_MAX_NBR_EP_INTR_OPEN,                                               /* Max nbr opened intr EP.                              */
               2u                                                /* Max nbr opened isoc EP.                              */
 };
 

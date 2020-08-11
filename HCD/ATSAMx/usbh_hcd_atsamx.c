@@ -36,6 +36,7 @@
 #define USBH_HCD_ATSAMX_MODULE
 #include "usbh_hcd_atsamx.h"
 #include "usbh_hub.h"
+#include <usbh_hc_cfg.h>
 #include <soc.h>
 #include <logging/log.h>
 LOG_MODULE_REGISTER(hcd);
@@ -371,13 +372,14 @@ typedef struct usbh_drv_data
 *********************************************************************************************************
 */
 
-static MEM_POOL ATSAMX_DrvMemPool;
+// static MEM_POOL ATSAMX_DrvMemPool;
 // static  volatile  USBH_HQUEUE  ATSAMX_URB_Proc_Q;
 //static            USBH_URB     ATSAMX_Q_UrbEp[ATSAMX_URB_PROC_Q_MAX];
 // static            CPU_STK      ATSAMX_URB_ProcTaskStk[ATSAMX_URB_PROC_TASK_STK_SIZE];
 
 K_MSGQ_DEFINE(ATSAMX_URB_Proc_Q, sizeof(USBH_URB), ATSAMX_URB_PROC_Q_MAX, 4);
 K_THREAD_STACK_DEFINE(ATSAMX_URB_ProcTaskStk, ATSAMX_URB_PROC_TASK_STK_SIZE);
+K_MEM_POOL_DEFINE(ATSAMX_DrvMemPool, USBH_DATA_BUF_MAX_LEN, USBH_DATA_BUF_MAX_LEN, (USBH_MAX_NBR_EP_BULK_OPEN + USBH_MAX_NBR_EP_INTR_OPEN + 1), sizeof(CPU_ALIGN));
 
 /*
 *********************************************************************************************************
@@ -571,7 +573,7 @@ static void USBH_ATSAMX_HCD_Init(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 	p_drv_data = (USBH_DRV_DATA *)Mem_HeapAlloc(sizeof(USBH_DRV_DATA),
 												sizeof(CPU_ALIGN),
 												&octets_reqd, &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
+	if (p_drv_data == NULL)
 	{
 		*p_err = USBH_ERR_ALLOC;
 		return;
@@ -588,19 +590,19 @@ static void USBH_ATSAMX_HCD_Init(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 	}
 
 	/* Create Mem pool area to be used for DMA alignment    */
-	Mem_PoolCreate(&ATSAMX_DrvMemPool, DEF_NULL,
-				   p_hc_drv->HC_CfgPtr->DataBufMaxLen,
-				   (p_hc_drv->HC_CfgPtr->MaxNbrEP_BulkOpen +
-					p_hc_drv->HC_CfgPtr->MaxNbrEP_IntrOpen + 1u),
-				   p_hc_drv->HC_CfgPtr->DataBufMaxLen, sizeof(CPU_ALIGN),
-				   &octets_reqd, &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
-	{
-		*p_err = USBH_ERR_ALLOC;
-		return;
-	}
+	// Mem_PoolCreate(&ATSAMX_DrvMemPool, DEF_NULL,
+	// 			   p_hc_drv->HC_CfgPtr->DataBufMaxLen,
+	// 			   (p_hc_drv->HC_CfgPtr->MaxNbrEP_BulkOpen +
+	// 				p_hc_drv->HC_CfgPtr->MaxNbrEP_IntrOpen + 1u),
+	// 			   p_hc_drv->HC_CfgPtr->DataBufMaxLen, sizeof(CPU_ALIGN),
+	// 			   &octets_reqd, &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	*p_err = USBH_ERR_ALLOC;
+	// 	return;
+	// }
 
-	k_tid_t ATSAMX_URB_Process_Tid =
+	// k_tid_t ATSAMX_URB_Process_Tid =
 		k_thread_create(&htask, ATSAMX_URB_ProcTaskStk,
 						K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
 						USBH_ATSAMX_URB_ProcTask, (void *)p_hc_drv,
@@ -1164,8 +1166,7 @@ static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 		*p_err = USBH_ERR_EP_ALLOC;
 		return;
 	}
-	LOG_ERR("pipe %d set ep adress %d", pipe_nbr,((p_urb->EP_Ptr->DevAddr << 8u) |
-								 p_urb->EP_Ptr->Desc.bEndpointAddress));
+	LOG_ERR("pipe %d set ep adress %d", pipe_nbr, ((p_urb->EP_Ptr->DevAddr << 8u) | p_urb->EP_Ptr->Desc.bEndpointAddress));
 	p_drv_data->PipeTbl[pipe_nbr].EP_Addr =
 		((p_urb->EP_Ptr->DevAddr << 8u) |
 		 p_urb->EP_Ptr->Desc.bEndpointAddress);
@@ -1176,8 +1177,8 @@ static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 	{
 		p_urb->DMA_BufPtr =
 			Mem_PoolBlkGet(&ATSAMX_DrvMemPool,
-						   ATSAMX_DrvMemPool.BlkSize, &err_lib);
-		if (err_lib != LIB_MEM_ERR_NONE)
+						   USBH_DATA_BUF_MAX_LEN, &err_lib);
+		if (p_urb->DMA_BufPtr == NULL)
 		{
 			*p_err = USBH_ERR_HC_ALLOC;
 			return;
@@ -2235,7 +2236,7 @@ static void USBH_ATSAMX_PipeCfg(USBH_URB *p_urb,
 	ep_nbr = USBH_EP_LogNbrGet(p_urb->EP_Ptr);
 	p_pipe_info->NextXferLen = p_urb->UserBufLen - p_urb->XferLen;
 	p_pipe_info->NextXferLen =
-		DEF_MIN(p_pipe_info->NextXferLen, ATSAMX_DrvMemPool.BlkSize);
+		DEF_MIN(p_pipe_info->NextXferLen, USBH_DATA_BUF_MAX_LEN);
 
 	Mem_Clr(p_urb->DMA_BufPtr, p_pipe_info->NextXferLen);
 	if (p_urb->Token !=

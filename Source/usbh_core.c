@@ -45,6 +45,7 @@ LOG_MODULE_REGISTER(usbh_core, 4);
 */
 K_THREAD_STACK_DEFINE(USBH_AsyncTask_Stack, 1024);
 K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 2048);
+K_MEM_POOL_DEFINE(AsyncURB_PPool, sizeof(USBH_URB), sizeof(USBH_URB), (USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV), sizeof(CPU_ALIGN));
 
 /*
 *********************************************************************************************************
@@ -421,38 +422,40 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 			return (err);
 		}
 	}
+	USBH_Host.IsocCount = (USBH_CFG_MAX_ISOC_DESC - 1);
+	USBH_Host.DevCount = (USBH_MAX_NBR_DEVS - 1);
+	USBH_Host.AsyncURB_Pool = AsyncURB_PPool;
 
-	Mem_PoolCreate(
-		&USBH_Host.IsocDescPool, /* Create mem pool for USB isoc desc struct.            */
-		(void *)USBH_Host.IsocDesc, sizeof(USBH_Host.IsocDesc),
-		USBH_CFG_MAX_ISOC_DESC, sizeof(USBH_ISOC_DESC),
-		sizeof(CPU_ALIGN), &octets_reqd, &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
-	{
-		return (USBH_ERR_ALLOC);
-	}
+	// Mem_PoolCreate(
+	// 	&USBH_Host.IsocDescPool, /* Create mem pool for USB isoc desc struct.            */
+	// 	(void *)USBH_Host.IsocDesc, sizeof(USBH_Host.IsocDesc),
+	// 	USBH_CFG_MAX_ISOC_DESC, sizeof(USBH_ISOC_DESC),
+	// 	sizeof(CPU_ALIGN), &octets_reqd, &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	return (USBH_ERR_ALLOC);
+	// }
 
-	Mem_PoolCreate(
-		&USBH_Host.DevPool, /* Create mem pool for USB device struct.               */
-		(void *)USBH_Host.DevList, sizeof(USBH_Host.DevList),
-		USBH_MAX_NBR_DEVS, sizeof(USBH_DEV), sizeof(CPU_ALIGN),
-		&octets_reqd, &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
-	{
-		return (USBH_ERR_ALLOC);
-	}
-
-	Mem_PoolCreate(
-		&USBH_Host.AsyncURB_Pool, /* Create mem pool for extra URB used in async comm.    */
-		(void *)0,
-		(USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV *
-		 sizeof(USBH_URB)),
-		(USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV),
-		sizeof(USBH_URB), sizeof(CPU_ALIGN), &octets_reqd, &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
-	{
-		return (USBH_ERR_ALLOC);
-	}
+	// Mem_PoolCreate(
+	// 	&USBH_Host.DevPool, /* Create mem pool for USB device struct.               */
+	// 	(void *)USBH_Host.DevList, sizeof(USBH_Host.DevList),
+	// 	USBH_MAX_NBR_DEVS, sizeof(USBH_DEV), sizeof(CPU_ALIGN),
+	// 	&octets_reqd, &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	return (USBH_ERR_ALLOC);
+	// }
+	// Mem_PoolCreate(
+	// 	&USBH_Host.AsyncURB_Pool, /* Create mem pool for extra URB used in async comm.    */
+	// 	(void *)0,
+	// 	(USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV *
+	// 	 sizeof(USBH_URB)),
+	// 	(USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV),
+	// 	sizeof(USBH_URB), sizeof(CPU_ALIGN), &octets_reqd, &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	return (USBH_ERR_ALLOC);
+	// }
 
 	err = USBH_ERR_NONE;
 
@@ -607,12 +610,21 @@ CPU_INT08U USBH_HC_Add(USBH_HC_CFG *p_hc_cfg, USBH_HC_DRV_API *p_drv_api,
 	p_hc_drv = &p_hc->HC_Drv;
 
 	/* Alloc dev struct for RH.                             */
-	p_rh_dev = (USBH_DEV *)Mem_PoolBlkGet(
-		&USBH_Host.DevPool, (CPU_SIZE_T)sizeof(USBH_DEV), &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
+	// p_rh_dev = (USBH_DEV *)Mem_PoolBlkGet(
+	// 	&USBH_Host.DevPool, (CPU_SIZE_T)sizeof(USBH_DEV), &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	*p_err = USBH_ERR_DEV_ALLOC;
+	// 	return (USBH_HC_NBR_NONE);
+	// }
+	if (USBH_Host.DevCount < 0)
 	{
-		*p_err = USBH_ERR_DEV_ALLOC;
 		return (USBH_HC_NBR_NONE);
+	}
+	else
+	{
+		p_rh_dev = &USBH_Host.DevList[USBH_Host.DevCount--];
+		// USBH_Host.DevCount -= 1;
 	}
 
 	p_rh_dev->IsRootHub = (CPU_BOOLEAN)DEF_TRUE;
@@ -2629,12 +2641,21 @@ USBH_ERR USBH_IsocTxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 		return (USBH_ERR_EP_INVALID_TYPE);
 	}
 
-	p_isoc_desc_pool = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool;
-	p_isoc_desc = Mem_PoolBlkGet(p_isoc_desc_pool, sizeof(USBH_ISOC_DESC),
-								 &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
+	// p_isoc_desc_pool = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool;
+	// p_isoc_desc = Mem_PoolBlkGet(p_isoc_desc_pool, sizeof(USBH_ISOC_DESC),
+	// 							 &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	return (USBH_ERR_DESC_ALLOC);
+	// }
+	if (p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount < 0)
 	{
 		return (USBH_ERR_DESC_ALLOC);
+	}
+	else
+	{
+		p_isoc_desc = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDesc[p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount--];
+		// p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount -= 1;
 	}
 
 	p_isoc_desc->BufPtr = p_buf;
@@ -2648,7 +2669,8 @@ USBH_ERR USBH_IsocTxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 						 (void *)fnct, p_fnct_arg);
 	if (err != USBH_ERR_NONE)
 	{
-		Mem_PoolBlkFree(p_isoc_desc_pool, p_isoc_desc, &err_lib);
+		p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount++;
+		// Mem_PoolBlkFree(p_isoc_desc_pool, p_isoc_desc, &err_lib);
 	}
 
 	return (err);
@@ -2796,12 +2818,22 @@ USBH_ERR USBH_IsocRxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 		return (USBH_ERR_EP_INVALID_TYPE);
 	}
 
-	p_isoc_desc_pool = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool;
-	p_isoc_desc = Mem_PoolBlkGet(p_isoc_desc_pool, sizeof(USBH_ISOC_DESC),
-								 &err_lib);
-	if (err_lib != LIB_MEM_ERR_NONE)
+	// p_isoc_desc_pool = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool;
+	// p_isoc_desc = Mem_PoolBlkGet(p_isoc_desc_pool, sizeof(USBH_ISOC_DESC),
+	// 							 &err_lib);
+	// if (err_lib != LIB_MEM_ERR_NONE)
+	// {
+	// 	return (USBH_ERR_DESC_ALLOC);
+	// }
+
+	if (p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount < 0)
 	{
 		return (USBH_ERR_DESC_ALLOC);
+	}
+	else
+	{
+		p_isoc_desc = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDesc[p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount--];
+		// p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount -= 1;
 	}
 
 	p_isoc_desc->BufPtr = p_buf;
@@ -2815,7 +2847,8 @@ USBH_ERR USBH_IsocRxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 						 (void *)fnct, p_fnct_arg);
 	if (err != USBH_ERR_NONE)
 	{
-		Mem_PoolBlkFree(p_isoc_desc_pool, p_isoc_desc, &err_lib);
+		// Mem_PoolBlkFree(p_isoc_desc_pool, p_isoc_desc, &err_lib);
+		p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount++;
 	}
 
 	return (err);
@@ -3850,7 +3883,7 @@ static USBH_ERR USBH_AsyncXfer(USBH_EP *p_ep, void *p_buf, CPU_INT32U buf_len,
 			&p_ep->DevPtr->HC_Ptr->HostPtr->AsyncURB_Pool;
 		p_urb = (USBH_URB *)Mem_PoolBlkGet(p_async_urb_pool,
 										   sizeof(USBH_URB), &err_lib);
-		if (err_lib != LIB_MEM_ERR_NONE)
+		if (p_urb == NULL)
 		{
 			return (USBH_ERR_ALLOC);
 		}
@@ -4124,9 +4157,10 @@ static void USBH_URB_Notify(USBH_URB *p_urb)
 			p_frm_err = p_isoc_desc->FrmErr;
 			CPU_CRITICAL_EXIT();
 
-			Mem_PoolBlkFree(
-				&p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool,
-				p_isoc_desc, &err_lib);
+			// Mem_PoolBlkFree(
+			// 	&p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool,
+			// 	p_isoc_desc, &err_lib);
+			p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount++;
 
 			p_isoc_fnct(p_ep, p_buf, buf_len, xfer_len, start_frm,
 						nbr_frm, p_frm_len, p_frm_err, p_arg, err);

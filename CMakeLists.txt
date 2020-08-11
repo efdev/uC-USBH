@@ -1,7 +1,7 @@
 if(CONFIG_UC_USBH)
 	zephyr_library()
 
-	zephyr_include_directories(Source/MSC Source/uc-lib HCD/ATSAMx zephyr Source)
+	zephyr_include_directories(Source/MSC HCD/ATSAMx zephyr Source)
 #Source/uc-cpu Source/uc-lib 
 	zephyr_library_sources(
 		Source/usbh_class.c
@@ -16,7 +16,7 @@ if(CONFIG_UC_USBH)
 		# App/HID/app_usbh_mouse.c
 		# App/HID/app_usbh_mouse.c
 		zephyr/usbh_os.c
-		Source/uc-lib/lib_mem.c
+		#Source/uc-lib/lib_mem.c
 		zephyr/usbh_hc_cfg.c
 		#Source/uc-lib/lib_ascii.c
 		zephyr/bsp_usbh_template.c

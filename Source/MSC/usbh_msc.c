@@ -578,8 +578,8 @@ typedef struct usbh_msc_csw
 */
 
 static USBH_MSC_DEV USBH_MSC_DevArr[USBH_MSC_CFG_MAX_DEV];
-static MEM_POOL USBH_MSC_DevPool;
-
+// static MEM_POOL USBH_MSC_DevPool;
+static int8_t USBH_MSC_DevCount;
 /*
 *********************************************************************************************************
 *                                      LOCAL FUNCTION PROTOTYPES
@@ -1280,9 +1280,10 @@ USBH_ERR USBH_MSC_RefRel(USBH_MSC_DEV *p_msc_dev)
             (p_msc_dev->State == USBH_CLASS_DEV_STATE_DISCONN))
         {
             /* Release MSC dev if no more ref on it.                */
-            Mem_PoolBlkFree(&USBH_MSC_DevPool,
-                            (void *)p_msc_dev,
-                            &err_lib);
+            // Mem_PoolBlkFree(&USBH_MSC_DevPool,
+            //                 (void *)p_msc_dev,
+            //                 &err_lib);
+            USBH_MSC_DevCount++;
         }
     }
 
@@ -1507,24 +1508,24 @@ static void USBH_MSC_GlobalInit(USBH_ERR *p_err)
         USBH_MSC_DevClr(&USBH_MSC_DevArr[ix]);
         USBH_OS_MutexCreate(&USBH_MSC_DevArr[ix].HMutex);
     }
-
-    Mem_PoolCreate(&USBH_MSC_DevPool, /* POOL for managing MSC dev struct.                    */
-                   (void *)USBH_MSC_DevArr,
-                   (sizeof(USBH_MSC_DEV) * USBH_MSC_CFG_MAX_DEV),
-                   USBH_MSC_CFG_MAX_DEV,
-                   sizeof(USBH_MSC_DEV),
-                   sizeof(CPU_ALIGN),
-                   &octets_reqd,
-                   &err_lib);
-    if (err_lib != LIB_MEM_ERR_NONE)
-    {
-        LOG_ERR("%d octets required\r\n", octets_reqd);
-        *p_err = USBH_ERR_ALLOC;
-    }
-    else
-    {
-        *p_err = USBH_ERR_NONE;
-    }
+    USBH_MSC_DevCount = (USBH_MSC_CFG_MAX_DEV - 1);
+    // Mem_PoolCreate(&USBH_MSC_DevPool, /* POOL for managing MSC dev struct.                    */
+    //                (void *)USBH_MSC_DevArr,
+    //                (sizeof(USBH_MSC_DEV) * USBH_MSC_CFG_MAX_DEV),
+    //                USBH_MSC_CFG_MAX_DEV,
+    //                sizeof(USBH_MSC_DEV),
+    //                sizeof(CPU_ALIGN),
+    //                &octets_reqd,
+    //                &err_lib);
+    // if (err_lib != LIB_MEM_ERR_NONE)
+    // {
+    //     LOG_ERR("%d octets required\r\n", octets_reqd);
+    //     *p_err = USBH_ERR_ALLOC;
+    // }
+    // else
+    // {
+    *p_err = USBH_ERR_NONE;
+    // }
 }
 
 /*
@@ -1581,13 +1582,22 @@ static void *USBH_MSC_ProbeIF(USBH_DEV *p_dev,
     {
 
         /* Alloc dev from MSC dev pool.                         */
-        p_msc_dev = (USBH_MSC_DEV *)Mem_PoolBlkGet(&USBH_MSC_DevPool,
-                                                   sizeof(USBH_MSC_DEV),
-                                                   &err_lib);
-        if (err_lib != LIB_MEM_ERR_NONE)
+        // p_msc_dev = (USBH_MSC_DEV *)Mem_PoolBlkGet(&USBH_MSC_DevPool,
+        //                                            sizeof(USBH_MSC_DEV),
+        //                                            &err_lib);
+        // if (err_lib != LIB_MEM_ERR_NONE)
+        // {
+        //     *p_err = USBH_ERR_DEV_ALLOC;
+        //     return ((void *)0);
+        // }
+        if (USBH_MSC_DevCount < 0)
         {
             *p_err = USBH_ERR_DEV_ALLOC;
             return ((void *)0);
+        }
+        else
+        {
+            p_msc_dev = &USBH_MSC_DevArr[USBH_MSC_DevCount--];
         }
 
         USBH_MSC_DevClr(p_msc_dev);
@@ -1599,9 +1609,10 @@ static void *USBH_MSC_ProbeIF(USBH_DEV *p_dev,
         *p_err = USBH_MSC_EP_Open(p_msc_dev); /* Open Bulk in/out EPs.                                */
         if (*p_err != USBH_ERR_NONE)
         {
-            Mem_PoolBlkFree(&USBH_MSC_DevPool,
-                            (void *)p_msc_dev,
-                            &err_lib);
+            // Mem_PoolBlkFree(&USBH_MSC_DevPool,
+            //                 (void *)p_msc_dev,
+            //                 &err_lib);
+            USBH_MSC_DevCount++;
         }
     }
     else
@@ -1646,9 +1657,10 @@ static void USBH_MSC_Disconn(void *p_class_dev)
     if (p_msc_dev->RefCnt == 0u)
     { /* Release MSC dev.                                     */
         (void)USBH_OS_MutexUnlock(p_msc_dev->HMutex);
-        Mem_PoolBlkFree(&USBH_MSC_DevPool,
-                        (void *)p_msc_dev,
-                        &err_lib);
+        // Mem_PoolBlkFree(&USBH_MSC_DevPool,
+        //                 (void *)p_msc_dev,
+        //                 &err_lib);
+        USBH_MSC_DevCount++;
     }
 
     (void)USBH_OS_MutexUnlock(p_msc_dev->HMutex);

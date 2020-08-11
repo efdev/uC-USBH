@@ -1193,8 +1193,8 @@ struct  usbh_host {
     USBH_HOST_STATE  State;                                     /* State of USB host stack.                             */
 
     USBH_DEV         DevList[USBH_MAX_NBR_DEVS];                /* List of USB dev connected.                           */
-    MEM_POOL         DevPool;                                   /* Pool for mem mgmt of USB devs.                       */
-    MEM_POOL         IsocDescPool;
+    int8_t         DevCount;                                   /* Pool for mem mgmt of USB devs.                       */
+    int8_t         IsocCount;
     USBH_ISOC_DESC   IsocDesc[USBH_CFG_MAX_ISOC_DESC];
     MEM_POOL         AsyncURB_Pool;                             /* Pool of extra URB when using async comm.             */
 

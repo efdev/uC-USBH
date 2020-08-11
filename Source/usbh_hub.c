@@ -148,8 +148,8 @@ static const CPU_INT08U USBH_HUB_RH_LangID[] = {
 
 static CPU_INT08U USBH_HUB_DescBuf[USBH_HUB_MAX_DESC_LEN];
 static USBH_HUB_DEV USBH_HUB_Arr[USBH_CFG_MAX_HUBS];
-static MEM_POOL USBH_HUB_Pool;
-
+// static MEM_POOL USBH_HUB_Pool;
+static int8_t HubCount = USBH_CFG_MAX_HUBS;
 static volatile USBH_HUB_DEV *USBH_HUB_HeadPtr;
 static volatile USBH_HUB_DEV *USBH_HUB_TailPtr;
 static USBH_HSEM USBH_HUB_EventSem;
@@ -401,21 +401,21 @@ static void USBH_HUB_GlobalInit(USBH_ERR *p_err)
     { /* Clr all HUB dev structs.                             */
         USBH_HUB_Clr(&USBH_HUB_Arr[hub_ix]);
     }
-
-    Mem_PoolCreate(&USBH_HUB_Pool, /* POOL for managing hub dev structs.                   */
-                   (void *)USBH_HUB_Arr,
-                   sizeof(USBH_HUB_DEV) * USBH_CFG_MAX_HUBS,
-                   USBH_CFG_MAX_HUBS,
-                   sizeof(USBH_HUB_DEV),
-                   sizeof(CPU_ALIGN),
-                   &octets_reqd,
-                   &err_lib);
-    if (err_lib != LIB_MEM_ERR_NONE)
-    {
-        LOG_ERR("alloc memory %d\n", err_lib);
-        *p_err = USBH_ERR_ALLOC;
-        return;
-    }
+    HubCount = (USBH_CFG_MAX_HUBS-1);
+    // Mem_PoolCreate(&USBH_HUB_Pool, /* POOL for managing hub dev structs.                   */
+    //                (void *)USBH_HUB_Arr,
+    //                sizeof(USBH_HUB_DEV) * USBH_CFG_MAX_HUBS,
+    //                USBH_CFG_MAX_HUBS,
+    //                sizeof(USBH_HUB_DEV),
+    //                sizeof(CPU_ALIGN),
+    //                &octets_reqd,
+    //                &err_lib);
+    // if (err_lib != LIB_MEM_ERR_NONE)
+    // {
+    //     LOG_ERR("alloc memory %d\n", err_lib);
+    //     *p_err = USBH_ERR_ALLOC;
+    //     return;
+    // }
 
     *p_err = USBH_OS_SemCreate(&USBH_HUB_EventSem,
                                0u);
@@ -490,13 +490,22 @@ static void *USBH_HUB_IF_Probe(USBH_DEV *p_dev,
 
     if (if_desc.bInterfaceClass == USBH_CLASS_CODE_HUB)
     { /* If IF is HUB, alloc HUB dev.                         */
-        p_hub_dev = (USBH_HUB_DEV *)Mem_PoolBlkGet(&USBH_HUB_Pool,
-                                                   sizeof(USBH_HUB_DEV),
-                                                   &err_lib);
-        if (err_lib != LIB_MEM_ERR_NONE)
+        // p_hub_dev = (USBH_HUB_DEV *)Mem_PoolBlkGet(&USBH_HUB_Pool,
+        //                                            sizeof(USBH_HUB_DEV),
+        //                                            &err_lib);
+        // if (err_lib != LIB_MEM_ERR_NONE)
+        // {
+        //     *p_err = USBH_ERR_DEV_ALLOC;
+        //     return ((void *)0);
+        // }
+        if (HubCount < 0)
         {
             *p_err = USBH_ERR_DEV_ALLOC;
             return ((void *)0);
+        }
+        else
+        {
+            p_hub_dev = &USBH_HUB_Arr[HubCount--];
         }
 
         USBH_HUB_Clr(p_hub_dev);
@@ -750,9 +759,10 @@ static void USBH_HUB_Uninit(USBH_HUB_DEV *p_hub_dev)
         if (p_dev != (USBH_DEV *)0)
         {
             USBH_DevDisconn(p_dev);
-            Mem_PoolBlkFree(&p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevPool,
-                            (void *)p_dev,
-                            &err);
+            // Mem_PoolBlkFree(&p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevPool,
+            //                 (void *)p_dev,
+            //                 &err);
+            p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
 
             p_hub_dev->DevPtrList[port_ix] = (USBH_DEV *)0;
         }
@@ -1016,7 +1026,7 @@ static void USBH_HUB_EventProcess(void)
     }
 
     port_nbr = 1u;
-    p_dev_pool = &p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevPool;
+    // p_dev_pool = &p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevPool;
     nbr_ports = DEF_MIN(p_hub_dev->Desc.bNbrPorts,
                         USBH_CFG_MAX_HUB_PORTS);
 
@@ -1051,9 +1061,10 @@ static void USBH_HUB_EventProcess(void)
                 if (p_dev != (USBH_DEV *)0)
                 {
                     USBH_DevDisconn(p_dev);
-                    Mem_PoolBlkFree(p_dev_pool,
-                                    (void *)p_dev,
-                                    &err_lib);
+                    // Mem_PoolBlkFree(p_dev_pool,
+                    //                 (void *)p_dev,
+                    //                 &err_lib);
+                    p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
                     p_hub_dev->DevPtrList[port_nbr - 1u] = (USBH_DEV *)0;
                 }
 
@@ -1078,9 +1089,10 @@ static void USBH_HUB_EventProcess(void)
                 if (p_dev != (USBH_DEV *)0)
                 {
                     USBH_DevDisconn(p_dev);
-                    Mem_PoolBlkFree(p_dev_pool,
-                                    (void *)p_dev,
-                                    &err_lib);
+                    // Mem_PoolBlkFree(p_dev_pool,
+                    //                 (void *)p_dev,
+                    //                 &err_lib);
+                    p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
 
                     p_hub_dev->DevPtrList[port_nbr - 1u] = (USBH_DEV *)0;
                 }
@@ -1134,11 +1146,7 @@ static void USBH_HUB_EventProcess(void)
                 {
                     continue;
                 }
-
-                p_dev = (USBH_DEV *)Mem_PoolBlkGet(p_dev_pool,
-                                                   sizeof(USBH_DEV),
-                                                   &err_lib);
-                if (err_lib != LIB_MEM_ERR_NONE)
+                if (p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount < 0)
                 {
                     USBH_HUB_PortDis(p_hub_dev, port_nbr);
                     USBH_HUB_RefRel(p_hub_dev);
@@ -1146,6 +1154,23 @@ static void USBH_HUB_EventProcess(void)
 
                     return;
                 }
+                else
+                {
+                    p_dev = &p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevList[p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount--];
+                    // p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount -= 1;
+                }
+
+                // p_dev = (USBH_DEV *)Mem_PoolBlkGet(p_dev_pool,
+                //                                    sizeof(USBH_DEV),
+                //                                    &err_lib);
+                // if (err_lib != LIB_MEM_ERR_NONE)
+                // {
+                //     USBH_HUB_PortDis(p_hub_dev, port_nbr);
+                //     USBH_HUB_RefRel(p_hub_dev);
+                //     USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
+
+                //     return;
+                // }
 
                 p_dev->DevSpd = dev_spd;
                 p_dev->HubDevPtr = p_hub_dev->DevPtr;
@@ -1175,9 +1200,10 @@ static void USBH_HUB_EventProcess(void)
                     USBH_HUB_PortDis(p_hub_dev, port_nbr);
                     USBH_DevDisconn(p_dev);
 
-                    Mem_PoolBlkFree(p_dev_pool,
-                                    (void *)p_dev,
-                                    &err_lib);
+                    // Mem_PoolBlkFree(p_dev_pool,
+                    //                 (void *)p_dev,
+                    //                 &err_lib);
+                    p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
 
                     if (p_hub_dev->ConnCnt < USBH_CFG_MAX_NUM_DEV_RECONN)
                     {
@@ -1947,9 +1973,10 @@ static USBH_ERR USBH_HUB_RefRel(USBH_HUB_DEV *p_hub_dev)
 
         if (p_hub_dev->RefCnt == 0u)
         {
-            Mem_PoolBlkFree(&USBH_HUB_Pool, /* Ref count is 0, dev is removed, release HUB dev.     */
-                            (void *)p_hub_dev,
-                            &err);
+            // Mem_PoolBlkFree(&USBH_HUB_Pool, /* Ref count is 0, dev is removed, release HUB dev.     */
+            //                 (void *)p_hub_dev,
+            //                 &err);
+            HubCount++;
         }
     }
     CPU_CRITICAL_EXIT();
