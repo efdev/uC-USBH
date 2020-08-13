@@ -2595,7 +2595,6 @@ USBH_ERR USBH_IsocTxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 	else
 	{
 		p_isoc_desc = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDesc[p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount--];
-		// p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount -= 1;
 	}
 
 	p_isoc_desc->BufPtr = p_buf;

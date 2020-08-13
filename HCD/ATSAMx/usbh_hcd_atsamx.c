@@ -38,6 +38,8 @@
 #include "usbh_hub.h"
 #include <usbh_hc_cfg.h>
 #include <soc.h>
+#include <zephyr.h>
+#include <usbh_hc_cfg.h>
 #include <logging/log.h>
 LOG_MODULE_REGISTER(hcd);
 
@@ -1003,7 +1005,6 @@ static void USBH_ATSAMX_HCD_EP_Close(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 	{
 		Mem_PoolBlkFree(&ATSAMX_DrvMemPool, p_ep->URB.DMA_BufPtr,
 						&err_lib);
-
 		p_ep->URB.DMA_BufPtr = (void *)0u;
 	}
 

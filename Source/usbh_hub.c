@@ -35,7 +35,7 @@
 #include "usbh_hub.h"
 #include "usbh_core.h"
 #include "usbh_class.h"
-
+#include <usbh_os.h>
 #include <logging/log.h>
 LOG_MODULE_REGISTER(hub);
 /*
@@ -43,6 +43,7 @@ LOG_MODULE_REGISTER(hub);
 *                                            LOCAL DEFINES
 *********************************************************************************************************
 */
+K_MEM_POOL_DEFINE(USBH_HUB_Pool, sizeof(USBH_HUB_DEV), sizeof(USBH_HUB_DEV), USBH_CFG_MAX_HUBS, sizeof(CPU_ALIGN));
 
 /*
 *********************************************************************************************************
@@ -148,7 +149,6 @@ static const CPU_INT08U USBH_HUB_RH_LangID[] = {
 
 static CPU_INT08U USBH_HUB_DescBuf[USBH_HUB_MAX_DESC_LEN];
 static USBH_HUB_DEV USBH_HUB_Arr[USBH_CFG_MAX_HUBS];
-// static MEM_POOL USBH_HUB_Pool;
 static int8_t HubCount = USBH_CFG_MAX_HUBS;
 static volatile USBH_HUB_DEV *USBH_HUB_HeadPtr;
 static volatile USBH_HUB_DEV *USBH_HUB_TailPtr;
@@ -459,6 +459,7 @@ static void *USBH_HUB_IF_Probe(USBH_DEV *p_dev,
                                USBH_IF *p_if,
                                USBH_ERR *p_err)
 {
+    LOG_INF("hub if");
     USBH_HUB_DEV *p_hub_dev;
     USBH_IF_DESC if_desc;
 
