@@ -34,12 +34,14 @@
 
 #include "bsp_usbh_template.h"
 #include <usbh_cpu.h>
-// #include <lib_def.h>
 
 #include <soc.h>
 #include <drivers/pinmux.h>
 
 #include <usbh_cfg.h>
+
+#include <logging/log.h>
+LOG_MODULE_REGISTER(bsp);
 /*
 **************************************************************************************************************
 *                                            LOCAL DEFINES
@@ -81,14 +83,14 @@ static CPU_FNCT_PTR BSP_USBH_Template_ISR_Ptr;
 **************************************************************************************************************
 */
 
-static void BSP_USBH_Template_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err);
+static void BSP_USBH_samr21_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err);
 
-static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
+static void BSP_USBH_samr21_ISR_Register(CPU_FNCT_PTR isr_fnct,
 										   USBH_ERR *p_err);
 
-static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err);
+static void BSP_USBH_samr21_ISR_Unregister(USBH_ERR *p_err);
 
-static void BSP_USBH_Template_IntHandler(void);
+// static void BSP_USBH_samr21_IntHandler(void);
 
 /*
 *********************************************************************************************************
@@ -96,9 +98,9 @@ static void BSP_USBH_Template_IntHandler(void);
 *********************************************************************************************************
 */
 
-USBH_HC_BSP_API USBH_DrvBSP_Template = {BSP_USBH_Template_Init,
-										BSP_USBH_Template_ISR_Register,
-										BSP_USBH_Template_ISR_Unregister};
+USBH_HC_BSP_API USBH_DrvBSP_Template = {BSP_USBH_samr21_Init,
+										BSP_USBH_samr21_ISR_Register,
+										BSP_USBH_samr21_ISR_Unregister};
 
 /*
 **************************************************************************************************************
@@ -131,8 +133,9 @@ USBH_HC_BSP_API USBH_DrvBSP_Template = {BSP_USBH_Template_Init,
 * Note(s)     : none.
 *********************************************************************************************************
 */
-static void BSP_USBH_Template_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err)
+static void BSP_USBH_samr21_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err)
 {
+	LOG_INF("bsp init");
 	USBH_HC_Template_DrvPtr = p_drv;
 
 
@@ -178,17 +181,9 @@ static void BSP_USBH_Template_Init(USBH_HC_DRV *p_drv, USBH_ERR *p_err)
 *********************************************************************************************************
 */
 
-static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
+static void BSP_USBH_samr21_ISR_Register(CPU_FNCT_PTR isr_fnct,
 										   USBH_ERR *p_err)
 {
-	// do
-	// {
-	// 	IRQ_CONNECT(DT_INST_IRQ_BY_IDX(0, 0, irq),
-	// 				DT_INST_IRQ_BY_IDX(0, 0, priority),
-	// 				isr_fnct, 0, 0);
-	// 	irq_enable(DT_INST_IRQ_BY_IDX(0, 0, irq));
-	// } while (0);
-
 	*p_err = USBH_ERR_NONE;
 }
 
@@ -208,7 +203,7 @@ static void BSP_USBH_Template_ISR_Register(CPU_FNCT_PTR isr_fnct,
 *********************************************************************************************************
 */
 
-static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err)
+static void BSP_USBH_samr21_ISR_Unregister(USBH_ERR *p_err)
 {
 	BSP_USBH_Template_ISR_Ptr = (CPU_FNCT_PTR)0;
 
@@ -229,13 +224,13 @@ static void BSP_USBH_Template_ISR_Unregister(USBH_ERR *p_err)
 *********************************************************************************************************
 */
 
-static void BSP_USBH_Template_IntHandler(void)
-{
-	if (BSP_USBH_Template_ISR_Ptr != (CPU_FNCT_PTR)0)
-	{
-		BSP_USBH_Template_ISR_Ptr((void *)USBH_HC_Template_DrvPtr);
-	}
-}
+// static void BSP_USBH_samr21_IntHandler(void)
+// {
+// 	if (BSP_USBH_Template_ISR_Ptr != (CPU_FNCT_PTR)0)
+// 	{
+// 		BSP_USBH_Template_ISR_Ptr((void *)USBH_HC_Template_DrvPtr);
+// 	}
+// }
 
 /*
 **************************************************************************************************************

@@ -372,11 +372,6 @@ typedef struct usbh_drv_data
 *********************************************************************************************************
 */
 
-// static MEM_POOL ATSAMX_DrvMemPool;
-// static  volatile  USBH_HQUEUE  ATSAMX_URB_Proc_Q;
-//static            USBH_URB     ATSAMX_Q_UrbEp[ATSAMX_URB_PROC_Q_MAX];
-// static            CPU_STK      ATSAMX_URB_ProcTaskStk[ATSAMX_URB_PROC_TASK_STK_SIZE];
-
 K_MSGQ_DEFINE(ATSAMX_URB_Proc_Q, sizeof(USBH_URB), ATSAMX_URB_PROC_Q_MAX, 4);
 K_THREAD_STACK_DEFINE(ATSAMX_URB_ProcTaskStk, ATSAMX_URB_PROC_TASK_STK_SIZE);
 K_MEM_POOL_DEFINE(ATSAMX_DrvMemPool, USBH_DATA_BUF_MAX_LEN, USBH_DATA_BUF_MAX_LEN, (USBH_MAX_NBR_EP_BULK_OPEN + USBH_MAX_NBR_EP_INTR_OPEN + 1), sizeof(CPU_ALIGN));
@@ -566,9 +561,8 @@ USBH_HTASK htask;
 
 static void USBH_ATSAMX_HCD_Init(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 {
+	LOG_DBG("atsam hcd init");
 	USBH_DRV_DATA *p_drv_data;
-	CPU_SIZE_T octets_reqd;
-	LIB_ERR err_lib;
 
 	p_drv_data = (USBH_DRV_DATA *)Mem_HeapAlloc(sizeof(USBH_DRV_DATA),
 												sizeof(CPU_ALIGN),
@@ -589,25 +583,11 @@ static void USBH_ATSAMX_HCD_Init(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 		return;
 	}
 
-	/* Create Mem pool area to be used for DMA alignment    */
-	// Mem_PoolCreate(&ATSAMX_DrvMemPool, DEF_NULL,
-	// 			   p_hc_drv->HC_CfgPtr->DataBufMaxLen,
-	// 			   (p_hc_drv->HC_CfgPtr->MaxNbrEP_BulkOpen +
-	// 				p_hc_drv->HC_CfgPtr->MaxNbrEP_IntrOpen + 1u),
-	// 			   p_hc_drv->HC_CfgPtr->DataBufMaxLen, sizeof(CPU_ALIGN),
-	// 			   &octets_reqd, &err_lib);
-	// if (err_lib != LIB_MEM_ERR_NONE)
-	// {
-	// 	*p_err = USBH_ERR_ALLOC;
-	// 	return;
-	// }
-
-	// k_tid_t ATSAMX_URB_Process_Tid =
-		k_thread_create(&htask, ATSAMX_URB_ProcTaskStk,
-						K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
-						USBH_ATSAMX_URB_ProcTask, (void *)p_hc_drv,
-						NULL, NULL, 0, 0,
-						K_NO_WAIT);
+	k_thread_create(&htask, ATSAMX_URB_ProcTaskStk,
+					K_THREAD_STACK_SIZEOF(ATSAMX_URB_ProcTaskStk),
+					USBH_ATSAMX_URB_ProcTask, (void *)p_hc_drv,
+					NULL, NULL, 0, 0,
+					K_NO_WAIT);
 
 	*p_err = USBH_ERR_NONE;
 }
@@ -653,7 +633,6 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 		p_bsp_api->Init(p_hc_drv, p_err);
 		if (*p_err != USBH_ERR_NONE)
 		{
-			//LOG_ERR("bsp init error %i", p_err);
 			return;
 		}
 	}
@@ -770,7 +749,7 @@ static void USBH_ATSAMX_HCD_Start(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 
 static void USBH_ATSAMX_HCD_Stop(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 {
-	LOG_WRN("Stop");
+	LOG_DBG("Stop");
 
 	USBH_ATSAMX_REG *p_reg;
 	USBH_HC_BSP_API *p_bsp_api;
@@ -786,12 +765,6 @@ static void USBH_ATSAMX_HCD_Stop(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 	if (p_bsp_api->ISR_Unreg != (void *)0)
 	{
 		irq_disable(7);
-
-		// p_bsp_api->ISR_Unreg(p_err);
-		// if (*p_err != USBH_ERR_NONE)
-		// {
-		// 	return;
-		// }
 	}
 
 	p_reg->CTRLB &= ~USBH_ATSAMX_CTRLB_VBUSOK;
@@ -845,7 +818,7 @@ static USBH_DEV_SPD USBH_ATSAMX_HCD_SpdGet(USBH_HC_DRV *p_hc_drv,
 
 static void USBH_ATSAMX_HCD_Suspend(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 {
-	LOG_WRN("Suspend");
+	LOG_DBG("Suspend");
 	USBH_ATSAMX_REG *p_reg;
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U pipe_nbr;
@@ -890,7 +863,7 @@ static void USBH_ATSAMX_HCD_Suspend(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 
 static void USBH_ATSAMX_HCD_Resume(USBH_HC_DRV *p_hc_drv, USBH_ERR *p_err)
 {
-	LOG_WRN("Resume");
+	LOG_DBG("Resume");
 	USBH_ATSAMX_REG *p_reg;
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U pipe_nbr;
@@ -973,7 +946,7 @@ static CPU_INT32U USBH_ATSAMX_HCD_FrameNbrGet(USBH_HC_DRV *p_hc_drv,
 static void USBH_ATSAMX_HCD_EP_Open(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 									USBH_ERR *p_err)
 {
-	LOG_WRN("EP_Open");
+	LOG_DBG("EP_Open");
 	USBH_ATSAMX_REG *p_reg;
 
 	p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
@@ -1014,11 +987,10 @@ static void USBH_ATSAMX_HCD_EP_Open(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 static void USBH_ATSAMX_HCD_EP_Close(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 									 USBH_ERR *p_err)
 {
-	LOG_WRN("EP_Close");
+	LOG_DBG("EP_Close");
 	USBH_ATSAMX_REG *p_reg;
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U pipe_nbr;
-	LIB_ERR err_lib;
 
 	p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
 	p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
@@ -1026,17 +998,12 @@ static void USBH_ATSAMX_HCD_EP_Close(USBH_HC_DRV *p_hc_drv, USBH_EP *p_ep,
 	p_ep->DataPID =
 		0u; /* Set PID to DATA0                                      */
 	*p_err = USBH_ERR_NONE;
-	LOG_ERR("ep close pipe nbr %2x", pipe_nbr);
 
 	if (p_ep->URB.DMA_BufPtr != (void *)0u)
 	{
 		Mem_PoolBlkFree(&ATSAMX_DrvMemPool, p_ep->URB.DMA_BufPtr,
 						&err_lib);
-		// if (err_lib != LIB_MEM_ERR_NONE)
-		// {
-		// 	*p_err = USBH_ERR_HC_ALLOC;
-		// 	return;
-		// }
+
 		p_ep->URB.DMA_BufPtr = (void *)0u;
 	}
 
@@ -1147,7 +1114,6 @@ static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U ep_type;
 	CPU_INT08U pipe_nbr;
-	LIB_ERR err_lib;
 
 	p_reg = (USBH_ATSAMX_REG *)p_hc_drv->HC_CfgPtr->BaseAddr;
 	p_drv_data = (USBH_DRV_DATA *)p_hc_drv->DataPtr;
@@ -1166,7 +1132,7 @@ static void USBH_ATSAMX_HCD_URB_Submit(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 		*p_err = USBH_ERR_EP_ALLOC;
 		return;
 	}
-	LOG_ERR("pipe %d set ep adress %d", pipe_nbr, ((p_urb->EP_Ptr->DevAddr << 8u) | p_urb->EP_Ptr->Desc.bEndpointAddress));
+	LOG_DBG("pipe %d set ep adress %d", pipe_nbr, ((p_urb->EP_Ptr->DevAddr << 8u) | p_urb->EP_Ptr->Desc.bEndpointAddress));
 	p_drv_data->PipeTbl[pipe_nbr].EP_Addr =
 		((p_urb->EP_Ptr->DevAddr << 8u) |
 		 p_urb->EP_Ptr->Desc.bEndpointAddress);
@@ -1286,7 +1252,6 @@ static void USBH_ATSAMX_HCD_URB_Complete(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 	USBH_DRV_DATA *p_drv_data;
 	CPU_INT08U pipe_nbr;
 	CPU_INT16U xfer_len;
-	LIB_ERR err_lib;
 	CPU_SR_ALLOC();
 
 	*p_err = USBH_ERR_NONE;
@@ -1342,10 +1307,6 @@ static void USBH_ATSAMX_HCD_URB_Complete(USBH_HC_DRV *p_hc_drv, USBH_URB *p_urb,
 	CPU_CRITICAL_EXIT();
 
 	Mem_PoolBlkFree(&ATSAMX_DrvMemPool, p_urb->DMA_BufPtr, &err_lib);
-	// if (err_lib != LIB_MEM_ERR_NONE)
-	// {
-	// 	*p_err = USBH_ERR_HC_ALLOC;
-	// }
 	p_urb->DMA_BufPtr = (void *)0u;
 
 	p_drv_data->PipeTbl[pipe_nbr].EP_Addr = ATSAMX_DFLT_EP_ADDR;
@@ -1878,7 +1839,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	/* ----------- HANDLE INTERRUPT FLAG STATUS ----------- */
 	if (int_stat & USBH_ATSAMX_INT_RST)
 	{
-		LOG_WRN("bus reset");
+		LOG_DBG("bus reset");
 		p_reg->INTFLAG =
 			USBH_ATSAMX_INT_RST; /* Clear BUS RESET interrupt flag                       */
 
@@ -1892,7 +1853,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	}
 	else if (int_stat & USBH_ATSAMX_INT_DDISC)
 	{
-		LOG_WRN("disconnect usb");
+		LOG_DBG("disconnect usb");
 
 		/* Clear device disconnect/connect interrupt flags      */
 		p_reg->INTFLAG =
@@ -1917,7 +1878,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	}
 	else if (int_stat & USBH_ATSAMX_INT_DCONN)
 	{
-		LOG_WRN("connect usb");
+		LOG_DBG("connect usb");
 
 		p_reg->INTENCLR =
 			USBH_ATSAMX_INT_DCONN; /* Disable device connect interrupt                     */
@@ -1938,7 +1899,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	/* ----------------- WAKE UP TO POWER ----------------- */
 	if (int_stat & (USBH_ATSAMX_INT_WAKEUP | USBH_ATSAMX_INT_DCONN))
 	{
-		LOG_WRN("Wake up to power");
+		LOG_DBG("Wake up to power");
 		p_reg->INTFLAG =
 			USBH_ATSAMX_INT_WAKEUP; /* Clear WAKEUP interrupt flag                          */
 	}
@@ -1947,7 +1908,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 	if (int_stat & (USBH_ATSAMX_INT_WAKEUP | USBH_ATSAMX_INT_UPRSM |
 					USBH_ATSAMX_INT_DNRSM))
 	{
-		LOG_WRN("resume\n");
+		LOG_DBG("resume\n");
 		/* Clear interrupt flag                                 */
 		p_reg->INTFLAG =
 			(USBH_ATSAMX_INT_WAKEUP | USBH_ATSAMX_INT_UPRSM |
@@ -1977,7 +1938,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 
 		if (int_stat & USBH_ATSAMX_PINT_STALL)
 		{
-			LOG_WRN("stall");
+			LOG_DBG("stall");
 			p_reg->HPIPE[pipe_nbr].PSTATUSSET =
 				USBH_ATSAMX_PSTATUS_PFREEZE; /* Stop transfer                          */
 			p_reg->HPIPE[pipe_nbr].PINTFLAG =
@@ -1989,7 +1950,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 
 		if (int_stat & USBH_ATSAMX_PINT_PERR)
 		{
-			LOG_ERR("pipe error interrupt");
+			LOG_DBG("pipe error interrupt");
 			p_reg->HPIPE[pipe_nbr].PSTATUSSET =
 				USBH_ATSAMX_PSTATUS_PFREEZE; /* Stop transfer                          */
 			p_reg->HPIPE[pipe_nbr].PINTFLAG =
@@ -2002,7 +1963,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 		if (int_stat &
 			USBH_ATSAMX_PINT_TXSTP)
 		{ /* --------------- HANDLE SETUP PACKETS --------------- */
-			LOG_WRN("handle setup packets");
+			LOG_DBG("handle setup packets");
 			p_reg->HPIPE[pipe_nbr].PINTENCLR =
 				USBH_ATSAMX_PINT_TXSTP; /* Disable Setup transfer interrupt              */
 			p_reg->HPIPE[pipe_nbr].PINTFLAG =
@@ -2030,7 +1991,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 			if (p_urb->Token ==
 				USBH_TOKEN_IN)
 			{ /* ---------------- IN PACKETS HANDLER ---------------- */
-				LOG_WRN("in packets handler");
+				LOG_DBG("in packets handler");
 				max_pkt_size =
 					USBH_EP_MaxPktSizeGet(p_urb->EP_Ptr);
 				p_drv_data->PipeTbl[pipe_nbr].AppBufLen +=
@@ -2058,7 +2019,7 @@ static void USBH_ATSAMX_ISR_Handler(void *p_drv)
 			}
 			else
 			{ /* ---------------- OUT PACKETS HANDLER --------------- */
-				LOG_WRN("out packets handler");
+				LOG_DBG("out packets handler");
 				xfer_len =
 					p_drv_data->PipeTbl[pipe_nbr].AppBufLen +
 					p_urb->XferLen;
@@ -2127,7 +2088,7 @@ static void USBH_ATSAMX_URB_ProcTask(void *p_arg, void *p_arg2, void *p_arg3)
 		}
 
 		pipe_nbr = USBH_ATSAMX_GetPipeNbr(p_drv_data, p_urb->EP_Ptr);
-		LOG_ERR("task pipe nbr %2x", pipe_nbr);
+
 		if (pipe_nbr != ATSAMX_INVALID_PIPE)
 		{
 			CPU_CRITICAL_ENTER();
@@ -2139,7 +2100,6 @@ static void USBH_ATSAMX_URB_ProcTask(void *p_arg, void *p_arg2, void *p_arg3)
 			if (p_urb->Token ==
 				USBH_TOKEN_IN)
 			{ /* -------------- HANDLE IN TRANSACTIONS -------------- */
-				LOG_WRN("in transaction");
 				Mem_Copy(
 					(void *)((CPU_INT32U)p_urb->UserBufPtr +
 							 p_urb->XferLen),
@@ -2165,7 +2125,6 @@ static void USBH_ATSAMX_URB_ProcTask(void *p_arg, void *p_arg2, void *p_arg3)
 			}
 			else
 			{ /* ------------- HANDLE OUT TRANSACTIONS -------------- */
-				LOG_WRN("out transaction");
 				xfer_len = (p_drv_data->PipeTbl[pipe_nbr]
 								.AppBufLen -
 							xfer_len);
@@ -2263,7 +2222,7 @@ static void USBH_ATSAMX_PipeCfg(USBH_URB *p_urb,
 	if (p_urb->Token !=
 		USBH_TOKEN_IN)
 	{ /* ---------------- SETUP/OUT PACKETS ----------------- */
-		LOG_WRN("setup out packets");
+		LOG_DBG("setup out packets");
 		CPU_CRITICAL_ENTER();
 		reg_val = p_reg_hpipe->PCFG;
 		reg_val &= ~USBH_ATSAMX_PCFG_PTOKEN_MSK;
@@ -2276,7 +2235,7 @@ static void USBH_ATSAMX_PipeCfg(USBH_URB *p_urb,
 	}
 	else
 	{ /* -------------------- IN PACKETS -------------------- */
-		LOG_WRN("setup in packets");
+		LOG_DBG("setup in packets");
 		CPU_CRITICAL_ENTER();
 		reg_val = p_reg_hpipe->PCFG;
 		reg_val &= ~USBH_ATSAMX_PCFG_PTOKEN_MSK;
@@ -2312,11 +2271,9 @@ static CPU_INT08U USBH_ATSAMX_GetFreePipe(USBH_DRV_DATA *p_drv_data)
 		if (DEF_BIT_IS_CLR(p_drv_data->PipeUsed, DEF_BIT(pipe_nbr)))
 		{
 			DEF_BIT_SET(p_drv_data->PipeUsed, DEF_BIT(pipe_nbr));
-			LOG_WRN("valid free pipe %d", pipe_nbr);
 			return (pipe_nbr);
 		}
 	}
-	LOG_ERR("invalid free pipe");
 	return ATSAMX_INVALID_PIPE;
 }
 
@@ -2347,12 +2304,10 @@ static CPU_INT08U USBH_ATSAMX_GetPipeNbr(USBH_DRV_DATA *p_drv_data,
 
 	for (pipe_nbr = 0u; pipe_nbr < ATSAMX_MAX_NBR_PIPE; pipe_nbr++)
 	{
-		LOG_INF("ep address %d %d", p_drv_data->PipeTbl[pipe_nbr].EP_Addr, ep_addr);
 		if (p_drv_data->PipeTbl[pipe_nbr].EP_Addr == ep_addr)
 		{
 			return (pipe_nbr);
 		}
 	}
-	LOG_ERR("invalid pipe nbr");
 	return ATSAMX_INVALID_PIPE;
 }

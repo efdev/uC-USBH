@@ -369,7 +369,6 @@ void USBH_ClassResume(USBH_DEV *p_dev)
 
 USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 {
-    LOG_INF("ClassDrvConn begin");
     CPU_INT08U if_ix;
     CPU_INT08U nbr_if;
     CPU_BOOLEAN drv_found;
@@ -377,13 +376,13 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     USBH_CFG *p_cfg;
     USBH_IF *p_if;
 
-    LOG_INF("ProbeDev");
+    LOG_DBG("ProbeDev");
     err = USBH_ClassProbeDev(p_dev);
     if (err == USBH_ERR_NONE)
     {
         p_if = (USBH_IF *)0;
-        LOG_INF("ClassNotify");
 
+        LOG_DBG("ClassNotify");
         USBH_ClassNotify(p_dev, /* Find a class drv matching dev desc.                  */
                          p_if,
                          p_dev->ClassDevPtr,
@@ -400,8 +399,8 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     {
         /* Empty Else Statement                                 */
     }
-    LOG_INF("CfgSet");
 
+    LOG_DBG("CfgSet");
     err = USBH_CfgSet(p_dev, 1u); /* Select first cfg.                                    */
     if (err != USBH_ERR_NONE)
     {
@@ -409,20 +408,20 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
     }
 
     drv_found = DEF_FALSE;
-    LOG_INF("CfgGet");
+    LOG_DBG("CfgGet");
     p_cfg = USBH_CfgGet(p_dev, (p_dev->SelCfg - 1)); /* Get active cfg struct.                               */
-    LOG_INF("CfgIF_NbrGet");
+    LOG_DBG("CfgIF_NbrGet");
     nbr_if = USBH_CfgIF_NbrGet(p_cfg);
 
     for (if_ix = 0u; if_ix < nbr_if; if_ix++)
     { /* For all IFs present in cfg.                          */
-        LOG_INF("IF_Get");
+        LOG_DBG("IF_Get");
         p_if = USBH_IF_Get(p_cfg, if_ix);
         if (p_if == (USBH_IF *)0)
         {
             return (USBH_ERR_NULL_PTR);
         }
-        LOG_INF("ProbeIF");
+        LOG_DBG("ProbeIF");
         err = USBH_ClassProbeIF(p_dev, p_if); /* Find class driver matching IF.                       */
         if (err == USBH_ERR_NONE)
         {
@@ -445,7 +444,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 
     for (if_ix = 0u; if_ix < nbr_if; if_ix++)
     { /* For all IFs present in this cfg, notify app.         */
-        LOG_INF("IF_Get");
+        LOG_DBG("IF_Get");
 
         p_if = USBH_IF_Get(p_cfg, if_ix);
         if (p_if == (USBH_IF *)0)
@@ -483,7 +482,7 @@ USBH_ERR USBH_ClassDrvConn(USBH_DEV *p_dev)
 
 void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
 {
-    LOG_ERR("disconnect class driver");
+    LOG_DBG("disconnect class driver");
     CPU_INT08U if_ix;
     CPU_INT08U nbr_ifs;
     USBH_CFG *p_cfg;
@@ -498,7 +497,7 @@ void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
         if ((p_class_drv != DEF_NULL) &&
             (p_class_drv->Disconn != DEF_NULL))
         {
-            LOG_ERR("notify class");
+            LOG_DBG("notify class");
             USBH_ClassNotify(p_dev,
                              p_if,
                              p_dev->ClassDevPtr,
@@ -530,7 +529,7 @@ void USBH_ClassDrvDisconn(USBH_DEV *p_dev)
             if ((p_class_drv != DEF_NULL) &&
                 (p_class_drv->Disconn != DEF_NULL))
             {
-                LOG_ERR("notify class");
+                LOG_DBG("notify class");
                 USBH_ClassNotify(p_dev,
                                  p_if,
                                  p_if->ClassDevPtr,
@@ -623,7 +622,7 @@ static USBH_ERR USBH_ClassProbeDev(USBH_DEV *p_dev)
 static USBH_ERR USBH_ClassProbeIF(USBH_DEV *p_dev,
                                   USBH_IF *p_if)
 {
-    LOG_INF("ClassProbeIF");
+    LOG_DBG("ClassProbeIF");
     CPU_INT32U ix;
     USBH_CLASS_DRV *p_class_drv;
     void *p_class_dev;

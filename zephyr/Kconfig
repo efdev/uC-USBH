@@ -4,6 +4,5 @@
 config UC_USBH
 	bool "uC USB Host support"
 
-if UC_USBH
-
-endif
+config UC_USBH_MSC
+	bool "USB MSC Class Support"

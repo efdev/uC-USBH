@@ -28,11 +28,9 @@ typedef volatile uint16_t CPU_REG16;
 typedef volatile uint32_t CPU_REG32;
 typedef k_thread_stack_t CPU_STK;
 
-/* from cpu module */
-
 #define CPU_ENDIAN_TYPE_NONE 0u
-#define CPU_ENDIAN_TYPE_BIG 1u    /* Big-   endian word order (see Note #1a).                     */
-#define CPU_ENDIAN_TYPE_LITTLE 2u /* Little-endian word order (see Note #1b).                     */
+#define CPU_ENDIAN_TYPE_BIG 1u
+#define CPU_ENDIAN_TYPE_LITTLE 2u
 
 #define CPU_WORD_SIZE_08 1u
 #define CPU_WORD_SIZE_16 2u
@@ -56,15 +54,11 @@ typedef k_thread_stack_t CPU_STK;
 #define CPU_CRITICAL_EXIT() irq_unlock(key);
 #define CPU_SR_ALLOC() int key
 
-// #define CPU_CRITICAL_ENTER()
-// #define CPU_CRITICAL_EXIT()
-// #define CPU_SR_ALLOC()
-
 #define CPU_INT_EN()
 #define CPU_INT_DIS()
-#define CPU_CFG_ADDR_SIZE CPU_WORD_SIZE_32     /* Defines CPU address word size  (in octets).          */
-#define CPU_CFG_DATA_SIZE CPU_WORD_SIZE_32     /* Defines CPU data    word size  (in octets).          */
-#define CPU_CFG_DATA_SIZE_MAX CPU_WORD_SIZE_32 /* Defines CPU maximum word size  (in octets).          */
+#define CPU_CFG_ADDR_SIZE CPU_WORD_SIZE_32     /* Defines CPU address word size  (in octets). */
+#define CPU_CFG_DATA_SIZE CPU_WORD_SIZE_32     /* Defines CPU data    word size  (in octets). */
+#define CPU_CFG_DATA_SIZE_MAX CPU_WORD_SIZE_32 /* Defines CPU maximum word size  (in octets). */
 
 #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
 #define CPU_CFG_ENDIAN_TYPE CPU_ENDIAN_TYPE_LITTLE
@@ -77,7 +71,6 @@ typedef k_thread_stack_t CPU_STK;
 typedef CPU_INT32U CPU_ADDR;
 typedef CPU_INT32U CPU_DATA;
 
-typedef CPU_DATA CPU_ALIGN;  /* Defines CPU data-word-alignment size.                */
-typedef CPU_ADDR CPU_SIZE_T; /* Defines CPU standard 'size_t'   size.                */
-
+typedef CPU_DATA CPU_ALIGN;  /* Defines CPU data-word-alignment size.  */
+typedef CPU_ADDR CPU_SIZE_T; /* Defines CPU standard 'size_t'   size.  */
 #endif

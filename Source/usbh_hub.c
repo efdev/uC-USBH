@@ -394,28 +394,12 @@ USBH_ERR USBH_HUB_PortEn(USBH_HUB_DEV *p_hub_dev,
 static void USBH_HUB_GlobalInit(USBH_ERR *p_err)
 {
     CPU_INT08U hub_ix;
-    CPU_SIZE_T octets_reqd;
-    LIB_ERR err_lib;
 
     for (hub_ix = 0u; hub_ix < USBH_CFG_MAX_HUBS; hub_ix++)
     { /* Clr all HUB dev structs.                             */
         USBH_HUB_Clr(&USBH_HUB_Arr[hub_ix]);
     }
-    HubCount = (USBH_CFG_MAX_HUBS-1);
-    // Mem_PoolCreate(&USBH_HUB_Pool, /* POOL for managing hub dev structs.                   */
-    //                (void *)USBH_HUB_Arr,
-    //                sizeof(USBH_HUB_DEV) * USBH_CFG_MAX_HUBS,
-    //                USBH_CFG_MAX_HUBS,
-    //                sizeof(USBH_HUB_DEV),
-    //                sizeof(CPU_ALIGN),
-    //                &octets_reqd,
-    //                &err_lib);
-    // if (err_lib != LIB_MEM_ERR_NONE)
-    // {
-    //     LOG_ERR("alloc memory %d\n", err_lib);
-    //     *p_err = USBH_ERR_ALLOC;
-    //     return;
-    // }
+    HubCount = (USBH_CFG_MAX_HUBS - 1);
 
     *p_err = USBH_OS_SemCreate(&USBH_HUB_EventSem,
                                0u);
@@ -477,7 +461,6 @@ static void *USBH_HUB_IF_Probe(USBH_DEV *p_dev,
 {
     USBH_HUB_DEV *p_hub_dev;
     USBH_IF_DESC if_desc;
-    LIB_ERR err_lib;
 
     p_hub_dev = (USBH_HUB_DEV *)0;
     *p_err = USBH_IF_DescGet(p_if, /* Get IF desc.                                         */
@@ -490,14 +473,6 @@ static void *USBH_HUB_IF_Probe(USBH_DEV *p_dev,
 
     if (if_desc.bInterfaceClass == USBH_CLASS_CODE_HUB)
     { /* If IF is HUB, alloc HUB dev.                         */
-        // p_hub_dev = (USBH_HUB_DEV *)Mem_PoolBlkGet(&USBH_HUB_Pool,
-        //                                            sizeof(USBH_HUB_DEV),
-        //                                            &err_lib);
-        // if (err_lib != LIB_MEM_ERR_NONE)
-        // {
-        //     *p_err = USBH_ERR_DEV_ALLOC;
-        //     return ((void *)0);
-        // }
         if (HubCount < 0)
         {
             *p_err = USBH_ERR_DEV_ALLOC;
@@ -746,7 +721,6 @@ static void USBH_HUB_Uninit(USBH_HUB_DEV *p_hub_dev)
     CPU_INT16U nbr_ports;
     CPU_INT16U port_ix;
     USBH_DEV *p_dev;
-    LIB_ERR err;
 
     USBH_HUB_EP_Close(p_hub_dev);
     nbr_ports = DEF_MIN(p_hub_dev->Desc.bNbrPorts,
@@ -759,9 +733,6 @@ static void USBH_HUB_Uninit(USBH_HUB_DEV *p_hub_dev)
         if (p_dev != (USBH_DEV *)0)
         {
             USBH_DevDisconn(p_dev);
-            // Mem_PoolBlkFree(&p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevPool,
-            //                 (void *)p_dev,
-            //                 &err);
             p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
 
             p_hub_dev->DevPtrList[port_ix] = (USBH_DEV *)0;
@@ -821,7 +792,6 @@ static USBH_ERR USBH_HUB_EP_Open(USBH_HUB_DEV *p_hub_dev)
 
 static void USBH_HUB_EP_Close(USBH_HUB_DEV *p_hub_dev)
 {
-    LOG_INF("close interrupt ep");
     USBH_EP_Close(&p_hub_dev->IntrEP); /* Close hub intr EP.                                   */
 }
 
@@ -986,8 +956,6 @@ static void USBH_HUB_EventProcess(void)
 {
     CPU_INT16U nbr_ports;
     CPU_INT16U port_nbr;
-    MEM_POOL *p_dev_pool;
-    LIB_ERR err_lib;
     USBH_DEV_SPD dev_spd;
     USBH_HUB_DEV *p_hub_dev;
     USBH_HUB_PORT_STATUS port_status;
@@ -1016,7 +984,7 @@ static void USBH_HUB_EventProcess(void)
 
     if (p_hub_dev->State == USBH_CLASS_DEV_STATE_DISCONN)
     {
-        LOG_INF("device state disconnected");
+        LOG_DBG("device state disconnected");
         err = USBH_HUB_RefRel(p_hub_dev);
         if (err != USBH_ERR_NONE)
         {
@@ -1026,7 +994,6 @@ static void USBH_HUB_EventProcess(void)
     }
 
     port_nbr = 1u;
-    // p_dev_pool = &p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevPool;
     nbr_ports = DEF_MIN(p_hub_dev->Desc.bNbrPorts,
                         USBH_CFG_MAX_HUB_PORTS);
 
@@ -1043,7 +1010,7 @@ static void USBH_HUB_EventProcess(void)
         /* ------------- CONNECTION STATUS CHANGE ------------- */
         if (DEF_BIT_IS_SET(port_status.wPortChange, USBH_HUB_STATUS_C_PORT_CONN) == DEF_TRUE)
         {
-            LOG_INF("connection status change");
+            LOG_DBG("connection status change");
             err = USBH_HUB_PortConnChngClr(p_hub_dev, /* Clr port conn chng.                                  */
                                            port_nbr);
             if (err != USBH_ERR_NONE)
@@ -1054,16 +1021,13 @@ static void USBH_HUB_EventProcess(void)
             if (DEF_BIT_IS_SET(port_status.wPortStatus, USBH_HUB_STATUS_PORT_CONN) == DEF_TRUE)
             {
 
-                LOG_INF("Port %d : Device Connected.\r\n", port_nbr);
+                LOG_DBG("Port %d : Device Connected.\r\n", port_nbr);
 
                 p_hub_dev->ConnCnt = 0; /* Reset re-connection counter                          */
                 p_dev = p_hub_dev->DevPtrList[port_nbr - 1u];
                 if (p_dev != (USBH_DEV *)0)
                 {
                     USBH_DevDisconn(p_dev);
-                    // Mem_PoolBlkFree(p_dev_pool,
-                    //                 (void *)p_dev,
-                    //                 &err_lib);
                     p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
                     p_hub_dev->DevPtrList[port_nbr - 1u] = (USBH_DEV *)0;
                 }
@@ -1081,7 +1045,7 @@ static void USBH_HUB_EventProcess(void)
             }
             else
             { /* --------------- DEV HAS BEEN REMOVED --------------- */
-                LOG_INF("device has been removed");
+                LOG_DBG("device has been removed");
                 USBH_OS_DlyMS(10u); /* Wait for any pending I/O xfer to rtn err.            */
 
                 p_dev = p_hub_dev->DevPtrList[port_nbr - 1u];
@@ -1089,9 +1053,6 @@ static void USBH_HUB_EventProcess(void)
                 if (p_dev != (USBH_DEV *)0)
                 {
                     USBH_DevDisconn(p_dev);
-                    // Mem_PoolBlkFree(p_dev_pool,
-                    //                 (void *)p_dev,
-                    //                 &err_lib);
                     p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
 
                     p_hub_dev->DevPtrList[port_nbr - 1u] = (USBH_DEV *)0;
@@ -1132,7 +1093,7 @@ static void USBH_HUB_EventProcess(void)
                     dev_spd = USBH_DEV_SPD_FULL;
                 }
 
-                LOG_INF("Port %d : Port Reset complete, device speed is %s\r\n", port_nbr,
+                LOG_DBG("Port %d : Port Reset complete, device speed is %s\r\n", port_nbr,
                         (dev_spd == USBH_DEV_SPD_LOW) ? "LOW Speed(1.5 Mb/Sec)" : (dev_spd == USBH_DEV_SPD_FULL) ? "FULL Speed(12 Mb/Sec)" : "HIGH Speed(480 Mb/Sec)");
 
                 p_dev = p_hub_dev->DevPtrList[port_nbr - 1u];
@@ -1157,20 +1118,7 @@ static void USBH_HUB_EventProcess(void)
                 else
                 {
                     p_dev = &p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevList[p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount--];
-                    // p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount -= 1;
                 }
-
-                // p_dev = (USBH_DEV *)Mem_PoolBlkGet(p_dev_pool,
-                //                                    sizeof(USBH_DEV),
-                //                                    &err_lib);
-                // if (err_lib != LIB_MEM_ERR_NONE)
-                // {
-                //     USBH_HUB_PortDis(p_hub_dev, port_nbr);
-                //     USBH_HUB_RefRel(p_hub_dev);
-                //     USBH_HUB_EventReq(p_hub_dev); /* Retry URB.                                           */
-
-                //     return;
-                // }
 
                 p_dev->DevSpd = dev_spd;
                 p_dev->HubDevPtr = p_hub_dev->DevPtr;
@@ -1200,9 +1148,6 @@ static void USBH_HUB_EventProcess(void)
                     USBH_HUB_PortDis(p_hub_dev, port_nbr);
                     USBH_DevDisconn(p_dev);
 
-                    // Mem_PoolBlkFree(p_dev_pool,
-                    //                 (void *)p_dev,
-                    //                 &err_lib);
                     p_hub_dev->DevPtr->HC_Ptr->HostPtr->DevCount++;
 
                     if (p_hub_dev->ConnCnt < USBH_CFG_MAX_NUM_DEV_RECONN)
@@ -1444,7 +1389,6 @@ static USBH_ERR USBH_HUB_PortStatusGet(USBH_HUB_DEV *p_hub_dev,
                       &err);
     if (err != USBH_ERR_NONE)
     {
-        LOG_ERR("hub EP Reset");
         USBH_EP_Reset(p_hub_dev->DevPtr, (USBH_EP *)0);
     }
     else
@@ -1958,7 +1902,6 @@ static USBH_ERR USBH_HUB_RefAdd(USBH_HUB_DEV *p_hub_dev)
 
 static USBH_ERR USBH_HUB_RefRel(USBH_HUB_DEV *p_hub_dev)
 {
-    LIB_ERR err;
     CPU_SR_ALLOC();
 
     if (p_hub_dev == (USBH_HUB_DEV *)0)
@@ -1973,9 +1916,6 @@ static USBH_ERR USBH_HUB_RefRel(USBH_HUB_DEV *p_hub_dev)
 
         if (p_hub_dev->RefCnt == 0u)
         {
-            // Mem_PoolBlkFree(&USBH_HUB_Pool, /* Ref count is 0, dev is removed, release HUB dev.     */
-            //                 (void *)p_hub_dev,
-            //                 &err);
             HubCount++;
         }
     }
@@ -2247,7 +2187,7 @@ void USBH_HUB_RH_Event(USBH_DEV *p_dev)
     }
 
     (void)p_rh_drv_api->IntDis(p_hc_drv);
-    LOG_INF("RefAdd");
+    LOG_DBG("RefAdd");
     USBH_HUB_RefAdd(p_hub_dev);
 
     CPU_CRITICAL_ENTER();
@@ -2375,7 +2315,6 @@ void USBH_HUB_FmtHubDesc(USBH_HUB_DESC *p_hub_desc,
     static uint8_t temp;
     temp++;
     USBH_HUB_DESC *p_buf_dest_desc;
-    //CPU_INT08U i;
 
     p_buf_dest_desc = (USBH_HUB_DESC *)p_buf_dest;
 
@@ -2383,14 +2322,9 @@ void USBH_HUB_FmtHubDesc(USBH_HUB_DESC *p_hub_desc,
     p_buf_dest_desc->bDescriptorType = p_hub_desc->bDescriptorType;
     p_buf_dest_desc->bNbrPorts = p_hub_desc->bNbrPorts;
     p_buf_dest_desc->wHubCharacteristics = MEM_VAL_GET_INT16U_LITTLE(&p_hub_desc->wHubCharacteristics);
-    //p_buf_dest_desc->bPwrOn2PwrGood      = p_hub_desc->bPwrOn2PwrGood;
     p_buf_dest_desc->bHubContrCurrent = p_hub_desc->bHubContrCurrent;
     p_buf_dest_desc->DeviceRemovable = p_hub_desc->DeviceRemovable;
 
     memcpy(&p_buf_dest_desc->bPwrOn2PwrGood, &p_hub_desc->bPwrOn2PwrGood, sizeof(uint8_t));
     memcpy(&p_buf_dest_desc->PortPwrCtrlMask[0], &p_hub_desc->PortPwrCtrlMask[0], (sizeof(uint32_t) * USBH_CFG_MAX_HUB_PORTS));
-
-    // for (i = 0u; i < USBH_CFG_MAX_HUB_PORTS; i++) {
-    //    // p_buf_dest_desc->PortPwrCtrlMask[i] = p_hub_desc->PortPwrCtrlMask[i];
-    // }
 }

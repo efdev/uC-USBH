@@ -1,26 +1,18 @@
 if(CONFIG_UC_USBH)
 	zephyr_library()
+	zephyr_library_sources_ifdef(CONFIG_UC_USBH_MSC			Class/MSC/usbh_msc.c)
 
-	zephyr_include_directories(Source/MSC HCD/ATSAMx zephyr Source)
-#Source/uc-cpu Source/uc-lib 
+	#samr21 board support package and host controller driver
+	zephyr_library_sources_ifdef(CONFIG_BOARD_ATSAMR21_XPRO		HCD/ATSAMx/usbh_hcd_atsamx.c)
+	zephyr_library_sources_ifdef(CONFIG_BOARD_ATSAMR21_XPRO		zephyr/bsp/bsp_usbh_samr21.c)
+
+	zephyr_include_directories(HCD/ATSAMx Class/MSC zephyr/bsp zephyr Source)
+
 	zephyr_library_sources(
 		Source/usbh_class.c
 		Source/usbh_core.c
-		Source/usbh_hub.c
-
-		Source/MSC/usbh_msc.c
-		# Source/HID/usbh_hid.c
-		# Source/HID/usbh_hidparser.c
-		# App/HID/app_usbh_hid.c
-		# App/HID/app_usbh_keyboard.c
-		# App/HID/app_usbh_mouse.c
-		# App/HID/app_usbh_mouse.c
+		Source/usbh_hub.c		
 		zephyr/usbh_os.c
-		#Source/uc-lib/lib_mem.c
-		zephyr/usbh_hc_cfg.c
-		#Source/uc-lib/lib_ascii.c
-		zephyr/bsp_usbh_template.c
-		# Host Controller Driver 
-		HCD/ATSAMx/usbh_hcd_atsamx.c
+		zephyr/usbh_hc_cfg.c		
 	)
 endif()
