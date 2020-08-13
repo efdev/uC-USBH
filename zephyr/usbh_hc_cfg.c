@@ -76,8 +76,8 @@ USBH_HC_CFG  USBH_HC_TemplateCfg = {
               0u,                                               /* Size      of host controller dedicated mem.          */
               DEF_ENABLED,                                      /* Does HC can access sys mem?                          */
               USBH_DATA_BUF_MAX_LEN,                                            /* Data buf max len.                                    */
-              USBH_MAX_NBR_OPEN_BULK,                                               /* Max nbr opened bulk EP.                              */
-              USBH_MAX_NBR_OPEN_INTR,                                               /* Max nbr opened intr EP.                              */
+              USBH_MAX_NBR_EP_BULK_OPEN,                                               /* Max nbr opened bulk EP.                              */
+              USBH_MAX_NBR_EP_INTR_OPEN,                                               /* Max nbr opened intr EP.                              */
               2u                                                /* Max nbr opened isoc EP.                              */
 };
 

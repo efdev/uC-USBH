@@ -34,7 +34,7 @@
 #define   MICRIUM_SOURCE
 #include  "usbh_hid.h"
 #include  "usbh_hidparser.h"
-#include  "../../Source/usbh_core.h"
+#include  <usbh_core.h>
 
 
 /*

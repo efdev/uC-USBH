@@ -37,6 +37,7 @@
 #include "usbh_os.h"
 #include <usbh_cfg.h>
 #include <zephyr.h>
+#include <usbh_lib_mem.h>
 
 #include <logging/log.h>
 LOG_MODULE_REGISTER(os_layer);
@@ -170,7 +171,6 @@ void *USBH_OS_BusToVir(void *x)
 
 void USBH_OS_DlyMS(CPU_INT32U dly)
 {
-	// k_busy_wait((dly*1000));
 	k_sleep(K_MSEC(dly));
 }
 
@@ -190,7 +190,6 @@ void USBH_OS_DlyMS(CPU_INT32U dly)
 
 void USBH_OS_DlyUS(CPU_INT32U dly)
 {
-	// k_busy_wait(dly);
 	k_sleep(K_USEC(dly));
 }
 
@@ -379,6 +378,7 @@ USBH_ERR USBH_OS_SemDestroy(USBH_HSEM sem)
 USBH_ERR USBH_OS_SemWait(USBH_HSEM *sem, CPU_INT32U timeout)
 {
 	int err = 0;
+	int ret = USBH_ERR_NONE;
 	if (timeout == 0)
 	{
 		err = k_sem_take(sem, K_FOREVER);
@@ -390,13 +390,13 @@ USBH_ERR USBH_OS_SemWait(USBH_HSEM *sem, CPU_INT32U timeout)
 
 	if (err == EAGAIN)
 	{
-		return USBH_ERR_OS_TIMEOUT;
+		ret = USBH_ERR_OS_TIMEOUT;
 	}
 	else if (err != 0)
 	{
-		return USBH_ERR_OS_FAIL;
+		ret = USBH_ERR_OS_FAIL;
 	}
-	return (USBH_ERR_NONE);
+	return ret;
 }
 
 /*
@@ -439,8 +439,6 @@ USBH_ERR USBH_OS_SemWaitAbort(USBH_HSEM *sem)
 
 USBH_ERR USBH_OS_SemPost(USBH_HSEM *sem)
 {
-	// LOG_INF("SemPost %d", sem);
-	//k_sem_reset(sem);
 	k_sem_give(sem);
 	return (USBH_ERR_NONE);
 }
@@ -520,7 +518,7 @@ USBH_ERR USBH_OS_TaskCreate(CPU_CHAR *p_name, CPU_INT32U prio,
 */
 
 // USBH_HQUEUE USBH_OS_MsgQueueCreate(void **p_start, CPU_INT16U size,
-// 				   USBH_ERR *p_err)
+// 								   USBH_ERR *p_err)
 // {
 // 	(void)p_start;
 // 	(void)size;
@@ -601,18 +599,16 @@ void USBH_OS_MsgQueueGet(USBH_HQUEUE *msg_q, CPU_INT32U timeout,
 	}
 	if (err == 0)
 	{
-		err = USBH_ERR_NONE;
+		*p_err = USBH_ERR_NONE;
 	}
 	else if (err == EAGAIN || err == ENOMSG)
 	{
-		err = USBH_ERR_OS_TIMEOUT;
+		*p_err = USBH_ERR_OS_TIMEOUT;
 	}
 	else
 	{
-		err = USBH_ERR_OS_FAIL;
+		*p_err = USBH_ERR_OS_FAIL;
 	}
-
-	*p_err = err;
 }
 
 // /*

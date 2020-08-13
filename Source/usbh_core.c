@@ -45,9 +45,7 @@ LOG_MODULE_REGISTER(usbh_core, 4);
 */
 K_THREAD_STACK_DEFINE(USBH_AsyncTask_Stack, 1024);
 K_THREAD_STACK_DEFINE(USBH_HUB_EventTask_Stack, 2048);
-K_MEM_POOL_DEFINE(IsocDescPool, sizeof(USBH_ISOC_DESC), sizeof(USBH_ISOC_DESC), USBH_CFG_MAX_ISOC_DESC, sizeof(CPU_ALIGN));
-K_MEM_POOL_DEFINE(DevPool, sizeof(USBH_DEV), sizeof(USBH_DEV), USBH_MAX_NBR_DEVS, sizeof(CPU_ALIGN));
-K_MEM_POOL_DEFINE(AsyncURB_Pool, sizeof(USBH_URB), sizeof(USBH_URB), (USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV), sizeof(CPU_ALIGN));
+K_MEM_POOL_DEFINE(AsyncURB_PPool, sizeof(USBH_URB), sizeof(USBH_URB), (USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV), sizeof(CPU_ALIGN));
 
 /*
 *********************************************************************************************************
@@ -200,8 +198,8 @@ K_MEM_POOL_DEFINE(AsyncURB_Pool, sizeof(USBH_URB), sizeof(USBH_URB), (USBH_CFG_M
 *********************************************************************************************************
 */
 
-static USBH_URB *USBH_URB_HeadPtr;
-static USBH_URB *USBH_URB_TailPtr;
+static volatile USBH_URB *USBH_URB_HeadPtr;
+static volatile USBH_URB *USBH_URB_TailPtr;
 static USBH_HSEM USBH_URB_Sem;
 
 /*
@@ -353,8 +351,6 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 				   USBH_KERNEL_TASK_INFO *hub_task_info)
 {
 	USBH_ERR err;
-	// LIB_ERR err_lib;
-	// CPU_SIZE_T octets_reqd;
 	CPU_INT08U ix;
 
 	USBH_Version = USBH_VERSION;
@@ -422,43 +418,11 @@ USBH_ERR USBH_Init(USBH_KERNEL_TASK_INFO *async_task_info,
 			return (err);
 		}
 	}
+	USBH_Host.IsocCount = (USBH_CFG_MAX_ISOC_DESC - 1);
+	USBH_Host.DevCount = (USBH_MAX_NBR_DEVS - 1);
+	USBH_Host.AsyncURB_Pool = AsyncURB_PPool;
 
-	USBH_Host.IsocDescPool = IsocDescPool;
-	USBH_Host.DevPool = DevPool;
-	USBH_Host.AsyncURB_Pool = AsyncURB_Pool;
-		 // Mem_PoolCreate(
-		 // 	&USBH_Host.IsocDescPool, /* Create mem pool for USB isoc desc struct.            */
-		 // 	(void *)USBH_Host.IsocDesc, sizeof(USBH_Host.IsocDesc),
-		 // 	USBH_CFG_MAX_ISOC_DESC, sizeof(USBH_ISOC_DESC),
-		 // 	sizeof(CPU_ALIGN), &octets_reqd, &err_lib);
-		 // if (err_lib != LIB_MEM_ERR_NONE)
-		 // {
-		 // 	return (USBH_ERR_ALLOC);
-		 // }
-
-		 // Mem_PoolCreate(
-		 // 	&USBH_Host.DevPool, /* Create mem pool for USB device struct.               */
-		 // 	(void *)USBH_Host.DevList, sizeof(USBH_Host.DevList),
-		 // 	USBH_MAX_NBR_DEVS, sizeof(USBH_DEV), sizeof(CPU_ALIGN),
-		 // 	&octets_reqd, &err_lib);
-		 // if (err_lib != LIB_MEM_ERR_NONE)
-		 // {
-		 // 	return (USBH_ERR_ALLOC);
-		 // }
-
-		 // Mem_PoolCreate(
-		 // 	&USBH_Host.AsyncURB_Pool, /* Create mem pool for extra URB used in async comm.    */
-		 // 	(void *)0,
-		 // 	(USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV *
-		 // 	 sizeof(USBH_URB)),
-		 // 	(USBH_CFG_MAX_NBR_DEVS * USBH_CFG_MAX_EXTRA_URB_PER_DEV),
-		 // 	sizeof(USBH_URB), sizeof(CPU_ALIGN), &octets_reqd, &err_lib);
-		 // if (err_lib != LIB_MEM_ERR_NONE)
-		 // {
-		 // 	return (USBH_ERR_ALLOC);
-		 // }
-
-		 err = USBH_ERR_NONE;
+	err = USBH_ERR_NONE;
 
 	return (err);
 }
@@ -579,7 +543,6 @@ CPU_INT08U USBH_HC_Add(USBH_HC_CFG *p_hc_cfg, USBH_HC_DRV_API *p_drv_api,
 {
 	USBH_DEV *p_rh_dev;
 	CPU_INT08U hc_nbr;
-	// LIB_ERR err_lib;
 	USBH_HC *p_hc;
 	USBH_HC_DRV *p_hc_drv;
 	CPU_SR_ALLOC();
@@ -610,14 +573,15 @@ CPU_INT08U USBH_HC_Add(USBH_HC_CFG *p_hc_cfg, USBH_HC_DRV_API *p_drv_api,
 	p_hc = &USBH_Host.HC_Tbl[hc_nbr];
 	p_hc_drv = &p_hc->HC_Drv;
 
-	/* Alloc dev struct for RH.                             */
-	p_rh_dev = (USBH_DEV *)Mem_PoolBlkGet(
-		&USBH_Host.DevPool, (CPU_SIZE_T)sizeof(USBH_DEV), &err_lib);
-	// if (err_lib != LIB_MEM_ERR_NONE)
-	// {
-	// 	*p_err = USBH_ERR_DEV_ALLOC;
-	// 	return (USBH_HC_NBR_NONE);
-	// }
+	if (USBH_Host.DevCount < 0)
+	{
+		return (USBH_HC_NBR_NONE);
+	}
+	else
+	{
+		p_rh_dev = &USBH_Host.DevList[USBH_Host.DevCount--];
+	}
+
 	p_rh_dev->IsRootHub = (CPU_BOOLEAN)DEF_TRUE;
 	p_rh_dev->HC_Ptr = p_hc;
 
@@ -701,13 +665,12 @@ USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 		USBH_Host.HC_NbrNext)
 	{ /* Chk if HC nbr is valid.  
 		                            */
-		LOG_ERR("Start HC nbr invalid.");
+		LOG_DBG("Start HC nbr invalid.");
 		return (USBH_ERR_INVALID_ARG);
 	}
 
 	p_hc = &USBH_Host.HC_Tbl[hc_nbr];
 	p_rh_dev = p_hc->HC_Drv.RH_DevPtr;
-	LOG_DBG("call HC DevConn.");
 	err = USBH_DevConn(
 		p_rh_dev); /* Add RH of given HC.                                  */
 	if (err == USBH_ERR_NONE)
@@ -716,12 +679,9 @@ USBH_ERR USBH_HC_Start(CPU_INT08U hc_nbr)
 	}
 	else
 	{
-		LOG_ERR("DevDisconn.");
-
+		LOG_DBG("DevDisconn.");
 		USBH_DevDisconn(p_rh_dev);
 	}
-	LOG_DBG("call HCD Start.");
-
 	USBH_HCD_Start(p_hc, &err);
 
 	return (err);
@@ -793,7 +753,7 @@ USBH_ERR USBH_HC_Stop(CPU_INT08U hc_nbr)
 
 USBH_ERR USBH_HC_PortEn(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 {
-	LOG_INF("PortEn");
+	LOG_DBG("PortEn");
 	USBH_ERR err;
 	USBH_HC *p_hc;
 
@@ -837,7 +797,7 @@ USBH_ERR USBH_HC_PortEn(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 
 USBH_ERR USBH_HC_PortDis(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 {
-	LOG_INF("PortDis");
+	LOG_DBG("PortDis");
 	USBH_ERR err;
 	USBH_HC *p_hc;
 
@@ -875,7 +835,6 @@ USBH_ERR USBH_HC_PortDis(CPU_INT08U hc_nbr, CPU_INT08U port_nbr)
 
 CPU_INT32U USBH_HC_FrameNbrGet(CPU_INT08U hc_nbr, USBH_ERR *p_err)
 {
-	LOG_INF("FrameNbrGet");
 	CPU_INT32U frame_nbr;
 	USBH_HC *p_hc;
 
@@ -999,7 +958,7 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 		return (err);
 	}
 
-	LOG_ERR("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
+	LOG_DBG("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
 			p_dev->DevAddr);
 
 	nbr_cfgs = USBH_DevCfgNbrGet(
@@ -1031,7 +990,6 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 	err = USBH_ClassDrvConn(
 		p_dev); /* ------------- PROBE/LOAD CLASS DRV(S) -------------- */
 
-	LOG_DBG("DevConn done");
 	return (err);
 }
 
@@ -1051,7 +1009,7 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 
 void USBH_DevDisconn(USBH_DEV *p_dev)
 {
-	LOG_INF("DevDisconn");
+	LOG_DBG("DevDisconn");
 	USBH_ClassDrvDisconn(
 		p_dev); /* Unload class drv(s).                                 */
 
@@ -1158,7 +1116,7 @@ USBH_ERR USBH_CfgSet(USBH_DEV *p_dev, CPU_INT08U cfg_nbr)
 	{
 		p_dev->SelCfg = cfg_nbr;
 	}
-	LOG_INF("set configuration %d ret %d", cfg_nbr, err);
+	LOG_DBG("set configuration %d ret %d", cfg_nbr, err);
 
 	return (err);
 }
@@ -2615,9 +2573,7 @@ USBH_ERR USBH_IsocTxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 	USBH_ERR err;
 	CPU_INT08U ep_type;
 	CPU_INT08U ep_dir;
-	// LIB_ERR err_lib;
 	USBH_ISOC_DESC *p_isoc_desc;
-	MEM_POOL *p_isoc_desc_pool;
 
 	if (p_ep == (USBH_EP *)0)
 	{
@@ -2632,13 +2588,14 @@ USBH_ERR USBH_IsocTxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 		return (USBH_ERR_EP_INVALID_TYPE);
 	}
 
-	p_isoc_desc_pool = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool;
-	p_isoc_desc = Mem_PoolBlkGet(p_isoc_desc_pool, sizeof(USBH_ISOC_DESC),
-								 &err_lib);
-	// if (err_lib != LIB_MEM_ERR_NONE)
-	// {
-	// 	return (USBH_ERR_DESC_ALLOC);
-	// }
+	if (p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount < 0)
+	{
+		return (USBH_ERR_DESC_ALLOC);
+	}
+	else
+	{
+		p_isoc_desc = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDesc[p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount--];
+	}
 
 	p_isoc_desc->BufPtr = p_buf;
 	p_isoc_desc->BufLen = buf_len;
@@ -2651,7 +2608,7 @@ USBH_ERR USBH_IsocTxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 						 (void *)fnct, p_fnct_arg);
 	if (err != USBH_ERR_NONE)
 	{
-		Mem_PoolBlkFree(p_isoc_desc_pool, p_isoc_desc, &err_lib);
+		p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount++;
 	}
 
 	return (err);
@@ -2783,8 +2740,6 @@ USBH_ERR USBH_IsocRxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 	CPU_INT08U ep_type;
 	CPU_INT08U ep_dir;
 	USBH_ISOC_DESC *p_isoc_desc;
-	MEM_POOL *p_isoc_desc_pool;
-	// LIB_ERR err_lib;
 
 	if (p_ep == (USBH_EP *)0)
 	{
@@ -2799,13 +2754,14 @@ USBH_ERR USBH_IsocRxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 		return (USBH_ERR_EP_INVALID_TYPE);
 	}
 
-	p_isoc_desc_pool = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool;
-	p_isoc_desc = Mem_PoolBlkGet(p_isoc_desc_pool, sizeof(USBH_ISOC_DESC),
-								 &err_lib);
-	// if (err_lib != LIB_MEM_ERR_NONE)
-	// {
-	// 	return (USBH_ERR_DESC_ALLOC);
-	// }
+	if (p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount < 0)
+	{
+		return (USBH_ERR_DESC_ALLOC);
+	}
+	else
+	{
+		p_isoc_desc = &p_ep->DevPtr->HC_Ptr->HostPtr->IsocDesc[p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount--];
+	}
 
 	p_isoc_desc->BufPtr = p_buf;
 	p_isoc_desc->BufLen = buf_len;
@@ -2818,7 +2774,7 @@ USBH_ERR USBH_IsocRxAsync(USBH_EP *p_ep, CPU_INT08U *p_buf, CPU_INT32U buf_len,
 						 (void *)fnct, p_fnct_arg);
 	if (err != USBH_ERR_NONE)
 	{
-		Mem_PoolBlkFree(p_isoc_desc_pool, p_isoc_desc, &err_lib);
+		p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount++;
 	}
 
 	return (err);
@@ -3033,7 +2989,6 @@ USBH_ERR USBH_EP_StallSet(USBH_EP *p_ep)
 {
 	USBH_ERR err;
 	USBH_DEV *p_dev;
-	LOG_DBG("StallSet");
 	p_dev = p_ep->DevPtr;
 
 	(void)USBH_CtrlTx(p_dev, USBH_REQ_SET_FEATURE,
@@ -3078,7 +3033,6 @@ USBH_ERR USBH_EP_StallClr(USBH_EP *p_ep)
 	USBH_DEV *p_dev;
 
 	p_dev = p_ep->DevPtr;
-	LOG_DBG("StallClr");
 	(void)USBH_CtrlTx(
 		p_dev,
 		USBH_REQ_CLR_FEATURE, /* See Note (1)                                         */
@@ -3175,11 +3129,10 @@ USBH_ERR USBH_EP_Reset(USBH_DEV *p_dev, USBH_EP *p_ep)
 
 USBH_ERR USBH_EP_Close(USBH_EP *p_ep)
 {
-	LOG_ERR("core EP Close");
+	LOG_DBG("EP_Close");
 	USBH_ERR err;
 	USBH_DEV *p_dev;
 	USBH_URB *p_async_urb;
-	// LIB_ERR err_lib;
 
 	if (p_ep == (USBH_EP *)0)
 	{
@@ -3197,21 +3150,11 @@ USBH_ERR USBH_EP_Close(USBH_EP *p_ep)
 			&p_ep->URB); /* Abort any pending URB.                               */
 	}
 
-	// if (p_ep->URB.Sem != (USBH_HSEM )*0) {                       /* Close EP sem and mutex.                              */
-	//     (void)USBH_OS_SemDestroy(p_ep->URB.Sem);
-	//     p_ep->URB.Sem = (USBH_HSEM )0;
-	// }
-
-	// if (p_ep->Mutex != (USBH_HMUTEX )0) {
-	//     (void)USBH_OS_MutexDestroy(p_ep->Mutex);
-	//     p_ep->Mutex = (USBH_HMUTEX )0;
-	// }
-
 	if (!((p_dev->IsRootHub ==
 		   DEF_TRUE) && /* Close EP on HC.                                      */
 		  (p_dev->HC_Ptr->IsVirRootHub == DEF_TRUE)))
 	{
-		LOG_INF("close address %d", ((p_ep->DevAddr << 8u) | p_ep->Desc.bEndpointAddress));
+		LOG_DBG("close address %d", ((p_ep->DevAddr << 8u) | p_ep->Desc.bEndpointAddress));
 		USBH_HCD_EP_Close(p_ep->DevPtr->HC_Ptr, p_ep, &err);
 	}
 
@@ -3284,7 +3227,6 @@ void USBH_URB_Done(USBH_URB *p_urb)
 				&p_urb->Sem); /* Post notification to waiting task.                   */
 		}
 	}
-	LOG_DBG("URB_Done");
 }
 
 /*
@@ -3305,7 +3247,6 @@ USBH_ERR USBH_URB_Complete(USBH_URB *p_urb)
 {
 	USBH_DEV *p_dev;
 	USBH_ERR err;
-	// LIB_ERR err_lib;
 	USBH_URB *p_async_urb_to_remove;
 	USBH_URB *p_prev_async_urb;
 	USBH_URB urb_temp;
@@ -3833,7 +3774,6 @@ static USBH_ERR USBH_AsyncXfer(USBH_EP *p_ep, void *p_buf, CPU_INT32U buf_len,
 	USBH_URB *p_urb;
 	USBH_URB *p_async_urb;
 	MEM_POOL *p_async_urb_pool;
-	// LIB_ERR err_lib;
 
 	if (p_ep->IsOpen == DEF_FALSE)
 	{
@@ -3853,10 +3793,10 @@ static USBH_ERR USBH_AsyncXfer(USBH_EP *p_ep, void *p_buf, CPU_INT32U buf_len,
 			&p_ep->DevPtr->HC_Ptr->HostPtr->AsyncURB_Pool;
 		p_urb = (USBH_URB *)Mem_PoolBlkGet(p_async_urb_pool,
 										   sizeof(USBH_URB), &err_lib);
-		// if (err_lib != LIB_MEM_ERR_NONE)
-		// {
-		// 	return (USBH_ERR_ALLOC);
-		// }
+		if (p_urb == NULL)
+		{
+			return (USBH_ERR_ALLOC);
+		}
 
 		USBH_URB_Clr(p_urb);
 
@@ -4037,11 +3977,8 @@ static void USBH_URB_Abort(USBH_URB *p_urb)
 	}
 	else if (p_urb->State ==
 			 USBH_URB_STATE_QUEUED)
-	{	/* Is URB queued in async Q?                            */
+	{ /* Is URB queued in async Q?                            */
 		/* URB is in async lst.                                 */
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
-		USBH_PRINT_LOG("URB is in ASYNC QUEUE\r\n");
-#endif
 
 		p_urb->State = USBH_URB_STATE_ABORTED;
 	}
@@ -4086,7 +4023,6 @@ static void USBH_URB_Notify(USBH_URB *p_urb)
 	USBH_ISOC_CMPL_FNCT p_isoc_fnct;
 	USBH_ERR *p_frm_err;
 	USBH_ERR err;
-	// LIB_ERR err_lib;
 	CPU_SR_ALLOC();
 
 	p_ep = p_urb->EP_Ptr;
@@ -4127,9 +4063,7 @@ static void USBH_URB_Notify(USBH_URB *p_urb)
 			p_frm_err = p_isoc_desc->FrmErr;
 			CPU_CRITICAL_EXIT();
 
-			Mem_PoolBlkFree(
-				&p_ep->DevPtr->HC_Ptr->HostPtr->IsocDescPool,
-				p_isoc_desc, &err_lib);
+			p_ep->DevPtr->HC_Ptr->HostPtr->IsocCount++;
 
 			p_isoc_fnct(p_ep, p_buf, buf_len, xfer_len, start_frm,
 						nbr_frm, p_frm_len, p_frm_err, p_arg, err);
@@ -4730,7 +4664,7 @@ static USBH_ERR USBH_CfgParse(USBH_DEV *p_dev, USBH_CFG *p_cfg)
 
 static USBH_ERR USBH_DevAddrSet(USBH_DEV *p_dev)
 {
-	LOG_INF("set device address");
+	LOG_DBG("set device address");
 	USBH_ERR err;
 	CPU_INT08U retry;
 

@@ -57,9 +57,10 @@
 *                                               DEFINES
 *********************************************************************************************************
 */
-#define USBH_MAX_NBR_OPEN_BULK 2
-#define USBH_MAX_NBR_OPEN_INTR 2
+
 #define USBH_DATA_BUF_MAX_LEN 1024
+#define USBH_MAX_NBR_EP_BULK_OPEN 2
+#define USBH_MAX_NBR_EP_INTR_OPEN 2
 
 /*
 *********************************************************************************************************
