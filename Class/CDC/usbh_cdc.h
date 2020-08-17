@@ -40,8 +40,8 @@
 *********************************************************************************************************
 */
 
-#include  "../../Source/usbh_os.h"
-#include  "../../Source/usbh_class.h"
+#include  "usbh_os.h"
+#include  "usbh_class.h"
 
 
 /*

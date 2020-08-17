@@ -257,10 +257,8 @@ static CPU_INT32U USBH_StrDescGet(USBH_DEV *p_dev, CPU_INT08U desc_ix,
 								  CPU_INT16U lang_id, void *p_buf,
 								  CPU_INT32U buf_len, USBH_ERR *p_err);
 
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
 static void USBH_StrDescPrint(USBH_DEV *p_dev, CPU_INT08U *p_str_prefix,
 							  CPU_INT08U desc_idx);
-#endif
 
 static USBH_DESC_HDR *USBH_NextDescGet(void *p_buf, CPU_INT32U *p_offset);
 
@@ -961,6 +959,20 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 	LOG_DBG("Port %d: Device Address: %d.\r\n", p_dev->PortNbr,
 			p_dev->DevAddr);
 
+	// if (p_dev->DevDesc[14] != 0u)
+	// { /* iManufacturer = 0 -> no str desc for manufacturer.   */
+	// 	USBH_StrDescPrint(p_dev,
+	// 					  (CPU_INT08U *)"Manufacturer : ",
+	// 					  p_dev->DevDesc[14]);
+	// }
+
+	// if (p_dev->DevDesc[15] != 0u)
+	// { /* iProduct = 0 -> no str desc for product.             */
+	// 	USBH_StrDescPrint(p_dev,
+	// 					  (CPU_INT08U *)"Product      : ",
+	// 					  p_dev->DevDesc[15]);
+	// }
+
 	nbr_cfgs = USBH_DevCfgNbrGet(
 		p_dev); /* ---------- GET NBR OF CFG PRESENT IN DEV ----------- */
 	if (nbr_cfgs == 0u)
@@ -969,6 +981,7 @@ USBH_ERR USBH_DevConn(USBH_DEV *p_dev)
 	}
 	else if (nbr_cfgs > USBH_CFG_MAX_NBR_CFGS)
 	{
+		LOG_ERR("config nbr %d", nbr_cfgs);
 		return (USBH_ERR_CFG_ALLOC);
 	}
 	else
@@ -4870,7 +4883,6 @@ static CPU_INT32U USBH_StrDescGet(USBH_DEV *p_dev, CPU_INT08U desc_ix,
 * Note(s)     : None.
 *********************************************************************************************************
 */
-#if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
 static void USBH_StrDescPrint(USBH_DEV *p_dev, CPU_INT08U *str_prefix,
 							  CPU_INT08U desc_ix)
 {
@@ -4884,12 +4896,9 @@ static void USBH_StrDescPrint(USBH_DEV *p_dev, CPU_INT08U *str_prefix,
 	str_len = USBH_StrGet(p_dev, desc_ix, USBH_STRING_DESC_LANGID, &str[0],
 						  USBH_CFG_MAX_STR_LEN, &err);
 
-	USBH_PRINT_LOG(
-		"%s",
-		str_prefix); /* Print prefix str.                                    */
+	printk("%s", str_prefix); /* Print prefix str.                                    */
 
-	if (str_len >
-		0u)
+	if (str_len > 0u)
 	{ /* Print unicode string rd from the dev.                */
 		buf_len = str_len * 2u;
 		for (ix = 0u; (buf_len - ix) >= 2u; ix += 2u)
@@ -4899,12 +4908,11 @@ static void USBH_StrDescPrint(USBH_DEV *p_dev, CPU_INT08U *str_prefix,
 			{
 				break;
 			}
-			USBH_PRINT_LOG("%c", ch);
+			printk("%c", ch);
 		}
 	}
-	USBH_PRINT_LOG("\r\n");
+	printk("\r\n");
 }
-#endif
 
 /*
 *********************************************************************************************************

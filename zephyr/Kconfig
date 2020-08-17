@@ -6,3 +6,6 @@ config UC_USBH
 
 config UC_USBH_MSC
 	bool "USB MSC Class Support"
+
+config UC_USBH_CDC
+	bool "USB MSC Class Support"

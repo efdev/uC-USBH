@@ -25,8 +25,7 @@
 *********************************************************************************************************
 */
 
-#define  USBH_CDC_ACM_MODULE
-
+#define USBH_CDC_ACM_MODULE
 
 /*
 *********************************************************************************************************
@@ -34,10 +33,9 @@
 *********************************************************************************************************
 */
 
-#define   MICRIUM_SOURCE
-#include  "usbh_acm.h"
-#include  "../../../Source/usbh_core.h"
-
+#define MICRIUM_SOURCE
+#include "usbh_acm.h"
+#include "../../../Source/usbh_core.h"
 
 /*
 *********************************************************************************************************
@@ -45,13 +43,11 @@
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                           LOCAL CONSTANTS
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -67,13 +63,13 @@
 *********************************************************************************************************
 */
 
-typedef  struct  usb_cdc_acm_desc {
-    CPU_INT08U  bFunctionLength;                                /* Desc len in bytes.                                   */
-    CPU_INT08U  bDescriptorType;                                /* IF desc type.                                        */
-    CPU_INT08U  bDescriptorSubtype;                             /* ACM functional desc subtype.                         */
-    CPU_INT08U  bmCapabilities;                                 /* Capabilities this config supports.                   */
+typedef struct usb_cdc_acm_desc
+{
+    CPU_INT08U bFunctionLength;    /* Desc len in bytes.                                   */
+    CPU_INT08U bDescriptorType;    /* IF desc type.                                        */
+    CPU_INT08U bDescriptorSubtype; /* ACM functional desc subtype.                         */
+    CPU_INT08U bmCapabilities;     /* Capabilities this config supports.                   */
 } USBH_CDC_ACM_DESC;
-
 
 /*
 *********************************************************************************************************
@@ -95,13 +91,13 @@ typedef  struct  usb_cdc_acm_desc {
 *********************************************************************************************************
 */
 
-typedef  struct  usbh_cdc_linecoding {
-    CPU_INT32U  dwDTERate;                                      /* Data terminal rate in bps.                           */
-    CPU_INT08U  bCharFormat;                                    /* Stop bits. (See Notes #2)                            */
-    CPU_INT08U  bParityTtpe;                                    /* Parity type. (See Notes #3)                          */
-    CPU_INT08U  bDataBits;                                      /* Nbr of character bits(5,6,7,8 or 16).                */
+typedef struct usbh_cdc_linecoding
+{
+    CPU_INT32U dwDTERate;   /* Data terminal rate in bps.                           */
+    CPU_INT08U bCharFormat; /* Stop bits. (See Notes #2)                            */
+    CPU_INT08U bParityTtpe; /* Parity type. (See Notes #3)                          */
+    CPU_INT08U bDataBits;   /* Nbr of character bits(5,6,7,8 or 16).                */
 } USBH_CDC_LINECODING;
-
 
 /*
 *********************************************************************************************************
@@ -109,16 +105,14 @@ typedef  struct  usbh_cdc_linecoding {
 *********************************************************************************************************
 */
 
-
 /*
 *********************************************************************************************************
 *                                       LOCAL GLOBAL VARIABLES
 *********************************************************************************************************
 */
 
-static  MEM_POOL          USBH_CDC_ACM_DevPool;
-static  USBH_CDC_ACM_DEV  USBH_CDC_ACM_DevArr[USBH_CDC_ACM_CFG_MAX_DEV];
-
+static int8_t USBH_CDC_ACM_DevCount;
+static USBH_CDC_ACM_DEV USBH_CDC_ACM_DevArr[USBH_CDC_ACM_CFG_MAX_DEV];
 
 /*
 *********************************************************************************************************
@@ -126,40 +120,38 @@ static  USBH_CDC_ACM_DEV  USBH_CDC_ACM_DevArr[USBH_CDC_ACM_CFG_MAX_DEV];
 *********************************************************************************************************
 */
 
-static  USBH_ERR  USBH_CDC_ACM_DescParse          (USBH_CDC_ACM_DESC    *p_cdc_acm_desc,
-                                                   USBH_IF              *p_if);
+static USBH_ERR USBH_CDC_ACM_DescParse(USBH_CDC_ACM_DESC *p_cdc_acm_desc,
+                                       USBH_IF *p_if);
 
-static  void      USBH_CDC_ACM_SupportedReqEvtsGet(USBH_CDC_ACM_DEV     *p_cdc_acm_dev,
-                                                   USBH_CDC_ACM_DESC    *p_cdc_acm_desc);
+static void USBH_CDC_ACM_SupportedReqEvtsGet(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                             USBH_CDC_ACM_DESC *p_cdc_acm_desc);
 
-static  void      USBH_CDC_ACM_DataTxCmpl         (void                 *p_context,
-                                                   CPU_INT08U           *p_buf,
-                                                   CPU_INT32U            xfer_len,
-                                                   USBH_ERR              err);
+static void USBH_CDC_ACM_DataTxCmpl(void *p_context,
+                                    CPU_INT08U *p_buf,
+                                    CPU_INT32U xfer_len,
+                                    USBH_ERR err);
 
-static  void      USBH_CDC_ACM_DataRxCmpl         (void                 *p_context,
-                                                   CPU_INT08U           *p_buf,
-                                                   CPU_INT32U            xfer_len,
-                                                   USBH_ERR              err);
+static void USBH_CDC_ACM_DataRxCmpl(void *p_context,
+                                    CPU_INT08U *p_buf,
+                                    CPU_INT32U xfer_len,
+                                    USBH_ERR err);
 
-static  void      USBH_CDC_ACM_EventRxCmpl        (void                 *p_context,
-                                                   CPU_INT08U           *p_buf,
-                                                   CPU_INT32U            xfer_len,
-                                                   USBH_ERR              err);
+static void USBH_CDC_ACM_EventRxCmpl(void *p_context,
+                                     CPU_INT08U *p_buf,
+                                     CPU_INT32U xfer_len,
+                                     USBH_ERR err);
 
-static void       USBH_CDC_ACM_ParseLineCoding    (USBH_CDC_LINECODING  *p_linecoding,
-                                                   void                 *p_buf_src);
+static void USBH_CDC_ACM_ParseLineCoding(USBH_CDC_LINECODING *p_linecoding,
+                                         void *p_buf_src);
 
-static void       USBH_CDC_ACM_FmtLineCoding      (USBH_CDC_LINECODING  *p_linecoding,
-                                                   void                 *p_buf_dest);
-
+static void USBH_CDC_ACM_FmtLineCoding(USBH_CDC_LINECODING *p_linecoding,
+                                       void *p_buf_dest);
 
 /*
 *********************************************************************************************************
 *                                     LOCAL CONFIGURATION ERRORS
 *********************************************************************************************************
 */
-
 
 /*
 *********************************************************************************************************
@@ -184,35 +176,34 @@ static void       USBH_CDC_ACM_FmtLineCoding      (USBH_CDC_LINECODING  *p_linec
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_GlobalInit (void)
+USBH_ERR USBH_CDC_ACM_GlobalInit(void)
 {
-    CPU_SIZE_T  octets_reqd;
-    CPU_SIZE_T  dev_size;
-    USBH_ERR    err;
-    LIB_ERR     err_lib;
-
+    CPU_SIZE_T octets_reqd;
+    CPU_SIZE_T dev_size;
+    USBH_ERR err;
+    LIB_ERR err_lib;
 
     dev_size = sizeof(USBH_CDC_ACM_DEV) * USBH_CDC_ACM_CFG_MAX_DEV;
 
-    Mem_Clr((void *)USBH_CDC_ACM_DevArr, dev_size);             /* Reset all ACM dev structures.                        */
+    Mem_Clr((void *)USBH_CDC_ACM_DevArr, dev_size); /* Reset all ACM dev structures.                        */
 
-    Mem_PoolCreate (       &USBH_CDC_ACM_DevPool,               /* Create mem pool for ACM dev struct.                  */
-                    (void *)USBH_CDC_ACM_DevArr,
-                            dev_size,
-                            USBH_CDC_ACM_CFG_MAX_DEV,
-                            sizeof(USBH_CDC_ACM_DEV),
-                            sizeof(CPU_ALIGN),
-                           &octets_reqd,
-                           &err_lib);
-    if (err_lib != LIB_MEM_ERR_NONE) {
-        err = USBH_ERR_ALLOC;
-    } else {
-        err = USBH_ERR_NONE;
-    }
+    // Mem_PoolCreate (       &USBH_CDC_ACM_DevPool,               /* Create mem pool for ACM dev struct.                  */
+    //                 (void *)USBH_CDC_ACM_DevArr,
+    //                         dev_size,
+    //                         USBH_CDC_ACM_CFG_MAX_DEV,
+    //                         sizeof(USBH_CDC_ACM_DEV),
+    //                         sizeof(CPU_ALIGN),
+    //                        &octets_reqd,
+    //                        &err_lib);
+    USBH_CDC_ACM_DevCount = (USBH_CDC_ACM_CFG_MAX_DEV - 1);
+    // if (err_lib != LIB_MEM_ERR_NONE) {
+    //     err = USBH_ERR_ALLOC;
+    // } else {
+    err = USBH_ERR_NONE;
+    // }
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -237,42 +228,49 @@ USBH_ERR  USBH_CDC_ACM_GlobalInit (void)
 *********************************************************************************************************
 */
 
-USBH_CDC_ACM_DEV  *USBH_CDC_ACM_Add (USBH_CDC_DEV  *p_cdc_dev,
-                                     USBH_ERR      *p_err)
+USBH_CDC_ACM_DEV *USBH_CDC_ACM_Add(USBH_CDC_DEV *p_cdc_dev,
+                                   USBH_ERR *p_err)
 {
-    USBH_CDC_ACM_DEV   *p_cdc_acm_dev;
-    USBH_IF            *p_cif;
-    USBH_CDC_ACM_DESC   acm_desc;
-    LIB_ERR             err_lib;
+    USBH_CDC_ACM_DEV *p_cdc_acm_dev;
+    USBH_IF *p_cif;
+    USBH_CDC_ACM_DESC acm_desc;
+    LIB_ERR err_lib;
 
-
-    if (p_cdc_dev == (USBH_CDC_DEV *)0) {
-       *p_err = USBH_ERR_INVALID_ARG;
+    if (p_cdc_dev == (USBH_CDC_DEV *)0)
+    {
+        *p_err = USBH_ERR_INVALID_ARG;
         return ((USBH_CDC_ACM_DEV *)0);
     }
-                                                                /* Allocate CDC ACM dev from mem pool.                  */
-    p_cdc_acm_dev = (USBH_CDC_ACM_DEV *)Mem_PoolBlkGet(&USBH_CDC_ACM_DevPool,
-                                                        sizeof(USBH_CDC_ACM_DEV),
-                                                       &err_lib);
-    if (err_lib != LIB_MEM_ERR_NONE) {
-       *p_err = USBH_ERR_ALLOC;
+    /* Allocate CDC ACM dev from mem pool.                  */
+    // p_cdc_acm_dev = (USBH_CDC_ACM_DEV *)Mem_PoolBlkGet(&USBH_CDC_ACM_DevPool,
+    //                                                     sizeof(USBH_CDC_ACM_DEV),
+    //                                                    &err_lib);
+    // if (err_lib != LIB_MEM_ERR_NONE) {
+    //    *p_err = USBH_ERR_ALLOC;
+    //     return ((USBH_CDC_ACM_DEV *)0);
+    // }
+    if (USBH_CDC_ACM_DevCount < 0)
+    {
+        *p_err = USBH_ERR_ALLOC;
         return ((USBH_CDC_ACM_DEV *)0);
+    } else {
+        p_cdc_acm_dev = &USBH_CDC_ACM_DevArr[USBH_CDC_ACM_DevCount--];
     }
 
     p_cdc_acm_dev->CDC_DevPtr = p_cdc_dev;
 
     p_cif = USBH_CDC_CommIF_Get(p_cdc_acm_dev->CDC_DevPtr);
-   *p_err = USBH_CDC_ACM_DescParse(&acm_desc, p_cif);           /* Get ACM desc from IF.                                */
-    if (*p_err != USBH_ERR_NONE) {
+    *p_err = USBH_CDC_ACM_DescParse(&acm_desc, p_cif); /* Get ACM desc from IF.                                */
+    if (*p_err != USBH_ERR_NONE)
+    {
         return ((USBH_CDC_ACM_DEV *)0);
     }
 
-    USBH_CDC_ACM_SupportedReqEvtsGet(p_cdc_acm_dev,             /* Get events and requests supported by dev.            */
-                                    &acm_desc);
+    USBH_CDC_ACM_SupportedReqEvtsGet(p_cdc_acm_dev, /* Get events and requests supported by dev.            */
+                                     &acm_desc);
 
     return (p_cdc_acm_dev);
 }
-
 
 /*
 *********************************************************************************************************
@@ -290,25 +288,25 @@ USBH_CDC_ACM_DEV  *USBH_CDC_ACM_Add (USBH_CDC_DEV  *p_cdc_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_Remove (USBH_CDC_ACM_DEV  *p_cdc_acm_dev)
+USBH_ERR USBH_CDC_ACM_Remove(USBH_CDC_ACM_DEV *p_cdc_acm_dev)
 {
-    LIB_ERR  err;
+    LIB_ERR err;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
-
-    Mem_PoolBlkFree(       &USBH_CDC_ACM_DevPool,
-                    (void *)p_cdc_acm_dev,
-                           &err);
-    if (err != LIB_MEM_ERR_NONE) {
-        return (USBH_ERR_FREE);
-    }
+    USBH_CDC_ACM_DevCount++;
+    // Mem_PoolBlkFree(&USBH_CDC_ACM_DevPool,
+    //                 (void *)p_cdc_acm_dev,
+    //                 &err);
+    // if (err != LIB_MEM_ERR_NONE)
+    // {
+    //     return (USBH_ERR_FREE);
+    // }
 
     return (USBH_ERR_NONE);
 }
-
 
 /*
 *********************************************************************************************************
@@ -326,20 +324,20 @@ USBH_ERR  USBH_CDC_ACM_Remove (USBH_CDC_ACM_DEV  *p_cdc_acm_dev)
 *********************************************************************************************************
 */
 
-void  USBH_CDC_ACM_EventRxNotifyReg (USBH_CDC_ACM_DEV              *p_cdc_acm_dev,
-                                     USBH_CDC_SERIAL_STATE_NOTIFY   p_serial_state_notify)
+void USBH_CDC_ACM_EventRxNotifyReg(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                   USBH_CDC_SERIAL_STATE_NOTIFY p_serial_state_notify)
 {
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return;
     }
 
     p_cdc_acm_dev->EvtSerialStateNotifyPtr = p_serial_state_notify;
 
-    USBH_CDC_EventNotifyReg(        p_cdc_acm_dev->CDC_DevPtr,
-                                    USBH_CDC_ACM_EventRxCmpl,
+    USBH_CDC_EventNotifyReg(p_cdc_acm_dev->CDC_DevPtr,
+                            USBH_CDC_ACM_EventRxCmpl,
                             (void *)p_cdc_acm_dev);
 }
-
 
 /*
 *********************************************************************************************************
@@ -367,43 +365,43 @@ void  USBH_CDC_ACM_EventRxNotifyReg (USBH_CDC_ACM_DEV              *p_cdc_acm_de
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_LineCodingSet (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                      CPU_INT32U         baud_rate,
-                                      CPU_INT08U         stop_bits,
-                                      CPU_INT08U         parity_val,
-                                      CPU_INT08U         data_bits)
+USBH_ERR USBH_CDC_ACM_LineCodingSet(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                    CPU_INT32U baud_rate,
+                                    CPU_INT08U stop_bits,
+                                    CPU_INT08U parity_val,
+                                    CPU_INT08U data_bits)
 {
-    USBH_CDC_LINECODING  line_coding;
-    USBH_ERR             err;
+    USBH_CDC_LINECODING line_coding;
+    USBH_ERR err;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
-                                                                /* Chk whether device supports this request.            */
-    if (p_cdc_acm_dev->SupportedRequests.SetLineCoding == DEF_FALSE) {
+    /* Chk whether device supports this request.            */
+    if (p_cdc_acm_dev->SupportedRequests.SetLineCoding == DEF_FALSE)
+    {
         err = USBH_ERR_NOT_SUPPORTED;
         return (err);
     }
 
-    line_coding.dwDTERate   = baud_rate;
+    line_coding.dwDTERate = baud_rate;
     line_coding.bCharFormat = stop_bits;
     line_coding.bParityTtpe = parity_val;
-    line_coding.bDataBits   = data_bits;
+    line_coding.bDataBits = data_bits;
 
-    USBH_CDC_ACM_FmtLineCoding(&line_coding,                    /* Write line coding parameters into buffer.            */
-                                p_cdc_acm_dev->LineCodingBuf);
+    USBH_CDC_ACM_FmtLineCoding(&line_coding, /* Write line coding parameters into buffer.            */
+                               p_cdc_acm_dev->LineCodingBuf);
 
-    err = USBH_CDC_CmdTx (        p_cdc_acm_dev->CDC_DevPtr,
-                                  USBH_CDC_SET_LINECODING,
-                                 (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
-                                  0u,
-                          (void *)p_cdc_acm_dev->LineCodingBuf,
-                                  USBH_CDC_LEN_LINECODING);
+    err = USBH_CDC_CmdTx(p_cdc_acm_dev->CDC_DevPtr,
+                         USBH_CDC_SET_LINECODING,
+                         (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
+                         0u,
+                         (void *)p_cdc_acm_dev->LineCodingBuf,
+                         USBH_CDC_LEN_LINECODING);
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -440,44 +438,45 @@ USBH_ERR  USBH_CDC_ACM_LineCodingSet (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_LineCodingGet (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                      CPU_INT32U        *p_baud_rate,
-                                      CPU_INT08U        *p_stop_bits,
-                                      CPU_INT08U        *p_parity_val,
-                                      CPU_INT08U        *p_data_bits)
+USBH_ERR USBH_CDC_ACM_LineCodingGet(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                    CPU_INT32U *p_baud_rate,
+                                    CPU_INT08U *p_stop_bits,
+                                    CPU_INT08U *p_parity_val,
+                                    CPU_INT08U *p_data_bits)
 {
-    USBH_CDC_LINECODING  line_coding;
-    USBH_ERR             err;
+    USBH_CDC_LINECODING line_coding;
+    USBH_ERR err;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
-                                                                /* Chk if dev supports this request.                    */
-    if (p_cdc_acm_dev->SupportedRequests.GetLineCoding == DEF_FALSE) {
+    /* Chk if dev supports this request.                    */
+    if (p_cdc_acm_dev->SupportedRequests.GetLineCoding == DEF_FALSE)
+    {
         err = USBH_ERR_NOT_SUPPORTED;
         return (err);
     }
 
-    err = USBH_CDC_RespRx (        p_cdc_acm_dev->CDC_DevPtr,
-                                   USBH_CDC_GET_LINECODING,
-                                  (USBH_REQ_DIR_DEV_TO_HOST | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
-                                   0u,
-                           (void *)p_cdc_acm_dev->LineCodingBuf,
-                                   USBH_CDC_LEN_LINECODING);
-    if (err == USBH_ERR_NONE) {
+    err = USBH_CDC_RespRx(p_cdc_acm_dev->CDC_DevPtr,
+                          USBH_CDC_GET_LINECODING,
+                          (USBH_REQ_DIR_DEV_TO_HOST | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
+                          0u,
+                          (void *)p_cdc_acm_dev->LineCodingBuf,
+                          USBH_CDC_LEN_LINECODING);
+    if (err == USBH_ERR_NONE)
+    {
         USBH_CDC_ACM_ParseLineCoding(&line_coding,
-                                      p_cdc_acm_dev->LineCodingBuf);
+                                     p_cdc_acm_dev->LineCodingBuf);
 
-       *p_baud_rate  = line_coding.dwDTERate;
-       *p_stop_bits  = line_coding.bCharFormat;
-       *p_parity_val = line_coding.bParityTtpe;
-       *p_data_bits  = line_coding.bDataBits;
+        *p_baud_rate = line_coding.dwDTERate;
+        *p_stop_bits = line_coding.bCharFormat;
+        *p_parity_val = line_coding.bParityTtpe;
+        *p_data_bits = line_coding.bDataBits;
     }
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -513,41 +512,42 @@ USBH_ERR  USBH_CDC_ACM_LineCodingGet (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_LineStateSet (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                     CPU_INT08U         dtr_bit,
-                                     CPU_INT08U         rts_bit)
+USBH_ERR USBH_CDC_ACM_LineStateSet(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                   CPU_INT08U dtr_bit,
+                                   CPU_INT08U rts_bit)
 {
-    USBH_ERR    err;
-    CPU_INT08U  bitmap_value;
+    USBH_ERR err;
+    CPU_INT08U bitmap_value;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
-                                                                /* Chk if dev supports this request.                    */
-    if (p_cdc_acm_dev->SupportedRequests.SetControlLineState == DEF_FALSE) {
+    /* Chk if dev supports this request.                    */
+    if (p_cdc_acm_dev->SupportedRequests.SetControlLineState == DEF_FALSE)
+    {
         err = USBH_ERR_NOT_SUPPORTED;
         return (err);
     }
 
-    if ((dtr_bit > 1u) ||                                       /* Chk if dev supports these signals.                   */
-        (rts_bit > 1u)) {
+    if ((dtr_bit > 1u) || /* Chk if dev supports these signals.                   */
+        (rts_bit > 1u))
+    {
         err = USBH_ERR_NOT_SUPPORTED;
         return (err);
     }
 
     bitmap_value = ((CPU_INT08U)(rts_bit << 1u) | dtr_bit);
 
-    err = USBH_CDC_CmdTx (        p_cdc_acm_dev->CDC_DevPtr,
-                                  USBH_CDC_SET_CONTROL_LINESTATE,
-                                 (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
-                                  bitmap_value,
-                          (void *)0,
-                                  0u);
+    err = USBH_CDC_CmdTx(p_cdc_acm_dev->CDC_DevPtr,
+                         USBH_CDC_SET_CONTROL_LINESTATE,
+                         (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
+                         bitmap_value,
+                         (void *)0,
+                         0u);
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -578,31 +578,31 @@ USBH_ERR  USBH_CDC_ACM_LineStateSet (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_BreakSend (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                  CPU_INT16U         break_time)
+USBH_ERR USBH_CDC_ACM_BreakSend(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                CPU_INT16U break_time)
 {
-    USBH_ERR  err;
+    USBH_ERR err;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
-    if (p_cdc_acm_dev->SupportedRequests.SendBreak == DEF_FALSE) {
+    if (p_cdc_acm_dev->SupportedRequests.SendBreak == DEF_FALSE)
+    {
         err = USBH_ERR_NOT_SUPPORTED;
         return (err);
     }
 
-    err = USBH_CDC_CmdTx (        p_cdc_acm_dev->CDC_DevPtr,
-                                  USBH_CDC_SEND_BREAK,
-                                 (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
-                                  break_time,
-                          (void *)0,
-                                  0u);
+    err = USBH_CDC_CmdTx(p_cdc_acm_dev->CDC_DevPtr,
+                         USBH_CDC_SEND_BREAK,
+                         (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
+                         break_time,
+                         (void *)0,
+                         0u);
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -634,26 +634,25 @@ USBH_ERR  USBH_CDC_ACM_BreakSend (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_CmdSend (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                CPU_INT08U        *p_buf,
-                                CPU_INT32U         buf_len)
+USBH_ERR USBH_CDC_ACM_CmdSend(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                              CPU_INT08U *p_buf,
+                              CPU_INT32U buf_len)
 {
-    USBH_ERR  err;
+    USBH_ERR err;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
-    err = USBH_CDC_CmdTx (        p_cdc_acm_dev->CDC_DevPtr,    /* See Note #1.                                         */
-                                  USBH_CDC_SEND_ENCAPSULATED_COMMAND,
-                                 (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
-                                  0u,
-                          (void *)p_buf,
-                                  buf_len);
+    err = USBH_CDC_CmdTx(p_cdc_acm_dev->CDC_DevPtr, /* See Note #1.                                         */
+                         USBH_CDC_SEND_ENCAPSULATED_COMMAND,
+                         (USBH_REQ_DIR_HOST_TO_DEV | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
+                         0u,
+                         (void *)p_buf,
+                         buf_len);
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -685,27 +684,26 @@ USBH_ERR  USBH_CDC_ACM_CmdSend (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_RespRx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                               CPU_INT08U        *p_buf,
-                               CPU_INT32U         buf_len)
+USBH_ERR USBH_CDC_ACM_RespRx(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                             CPU_INT08U *p_buf,
+                             CPU_INT32U buf_len)
 {
-    USBH_ERR  err;
+    USBH_ERR err;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
-    err = USBH_CDC_RespRx (        p_cdc_acm_dev->CDC_DevPtr,   /* See Note #1.                                         */
-                                   USBH_CDC_GET_ENCAPSULATED_RESPONSE,
-                                  (USBH_REQ_DIR_DEV_TO_HOST | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
-                                   0u,
-                           (void *)p_buf,
-                                   buf_len);
+    err = USBH_CDC_RespRx(p_cdc_acm_dev->CDC_DevPtr, /* See Note #1.                                         */
+                          USBH_CDC_GET_ENCAPSULATED_RESPONSE,
+                          (USBH_REQ_DIR_DEV_TO_HOST | USBH_REQ_TYPE_CLASS | USBH_REQ_RECIPIENT_IF),
+                          0u,
+                          (void *)p_buf,
+                          buf_len);
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -735,16 +733,16 @@ USBH_ERR  USBH_CDC_ACM_RespRx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-CPU_INT32U  USBH_CDC_ACM_DataTx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                 void              *p_buf,
-                                 CPU_INT32U         buf_len,
-                                 USBH_ERR          *p_err)
+CPU_INT32U USBH_CDC_ACM_DataTx(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                               void *p_buf,
+                               CPU_INT32U buf_len,
+                               USBH_ERR *p_err)
 {
-    CPU_INT32U  xfer_len;
+    CPU_INT32U xfer_len;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
-       *p_err = USBH_ERR_INVALID_ARG;
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
+        *p_err = USBH_ERR_INVALID_ARG;
         return (0u);
     }
 
@@ -755,7 +753,6 @@ CPU_INT32U  USBH_CDC_ACM_DataTx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 
     return (xfer_len);
 }
-
 
 /*
 *********************************************************************************************************
@@ -786,16 +783,16 @@ CPU_INT32U  USBH_CDC_ACM_DataTx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-CPU_INT32U  USBH_CDC_ACM_DataRx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
-                                 void              *p_buf,
-                                 CPU_INT32U         buf_len,
-                                 USBH_ERR          *p_err)
+CPU_INT32U USBH_CDC_ACM_DataRx(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                               void *p_buf,
+                               CPU_INT32U buf_len,
+                               USBH_ERR *p_err)
 {
-    CPU_INT32U  xfer_len;
+    CPU_INT32U xfer_len;
 
-
-    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) {
-       *p_err = USBH_ERR_INVALID_ARG;
+    if (p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0)
+    {
+        *p_err = USBH_ERR_INVALID_ARG;
         return (0u);
     }
 
@@ -806,7 +803,6 @@ CPU_INT32U  USBH_CDC_ACM_DataRx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 
     return (xfer_len);
 }
-
 
 /*
 *********************************************************************************************************
@@ -841,33 +837,32 @@ CPU_INT32U  USBH_CDC_ACM_DataRx (USBH_CDC_ACM_DEV  *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_DataTxAsync (USBH_CDC_ACM_DEV      *p_cdc_acm_dev,
-                                    void                  *p_buf,
-                                    CPU_INT32U             buf_len,
-                                    USBH_CDC_DATA_NOTIFY   tx_cmpl_notify,
-                                    void                  *p_tx_cmpl_arg)
+USBH_ERR USBH_CDC_ACM_DataTxAsync(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                  void *p_buf,
+                                  CPU_INT32U buf_len,
+                                  USBH_CDC_DATA_NOTIFY tx_cmpl_notify,
+                                  void *p_tx_cmpl_arg)
 {
-    USBH_ERR  err;
+    USBH_ERR err;
 
-
-    if ((p_cdc_acm_dev   == (USBH_CDC_ACM_DEV   *)0) ||
-        (p_buf           == (void               *)0) ||
-        (tx_cmpl_notify  == (USBH_CDC_DATA_NOTIFY)0)) {
+    if ((p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) ||
+        (p_buf == (void *)0) ||
+        (tx_cmpl_notify == (USBH_CDC_DATA_NOTIFY)0))
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
     p_cdc_acm_dev->DataTxNotifyPtr = tx_cmpl_notify;
-    p_cdc_acm_dev->DataTxArgPtr    = p_tx_cmpl_arg;
+    p_cdc_acm_dev->DataTxArgPtr = p_tx_cmpl_arg;
 
-    err = USBH_CDC_DataTxAsync(        p_cdc_acm_dev->CDC_DevPtr,
-                                       p_buf,
-                                       buf_len,
-                                       USBH_CDC_ACM_DataTxCmpl,
+    err = USBH_CDC_DataTxAsync(p_cdc_acm_dev->CDC_DevPtr,
+                               p_buf,
+                               buf_len,
+                               USBH_CDC_ACM_DataTxCmpl,
                                (void *)p_cdc_acm_dev);
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -902,33 +897,32 @@ USBH_ERR  USBH_CDC_ACM_DataTxAsync (USBH_CDC_ACM_DEV      *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-USBH_ERR  USBH_CDC_ACM_DataRxAsync (USBH_CDC_ACM_DEV      *p_cdc_acm_dev,
-                                    void                  *p_buf,
-                                    CPU_INT32U             buf_len,
-                                    USBH_CDC_DATA_NOTIFY   rx_cmpl_notify,
-                                    void                  *p_rx_cmpl_arg)
+USBH_ERR USBH_CDC_ACM_DataRxAsync(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                  void *p_buf,
+                                  CPU_INT32U buf_len,
+                                  USBH_CDC_DATA_NOTIFY rx_cmpl_notify,
+                                  void *p_rx_cmpl_arg)
 {
-    USBH_ERR  err;
+    USBH_ERR err;
 
-
-    if ((p_cdc_acm_dev   == (USBH_CDC_ACM_DEV   *)0) ||
-        (p_buf           == (void               *)0) ||
-        (rx_cmpl_notify  == (USBH_CDC_DATA_NOTIFY)0)) {
+    if ((p_cdc_acm_dev == (USBH_CDC_ACM_DEV *)0) ||
+        (p_buf == (void *)0) ||
+        (rx_cmpl_notify == (USBH_CDC_DATA_NOTIFY)0))
+    {
         return (USBH_ERR_INVALID_ARG);
     }
 
     p_cdc_acm_dev->DataRxNotifyPtr = rx_cmpl_notify;
-    p_cdc_acm_dev->DataRxArgPtr    = p_rx_cmpl_arg;
+    p_cdc_acm_dev->DataRxArgPtr = p_rx_cmpl_arg;
 
-    err = USBH_CDC_DataRxAsync(        p_cdc_acm_dev->CDC_DevPtr,
-                                       p_buf,
-                                       buf_len,
-                                       USBH_CDC_ACM_DataRxCmpl,
+    err = USBH_CDC_DataRxAsync(p_cdc_acm_dev->CDC_DevPtr,
+                               p_buf,
+                               buf_len,
+                               USBH_CDC_ACM_DataRxCmpl,
                                (void *)p_cdc_acm_dev);
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -955,33 +949,35 @@ USBH_ERR  USBH_CDC_ACM_DataRxAsync (USBH_CDC_ACM_DEV      *p_cdc_acm_dev,
 *********************************************************************************************************
 */
 
-static  USBH_ERR  USBH_CDC_ACM_DescParse (USBH_CDC_ACM_DESC  *p_cdc_acm_desc,
-                                          USBH_IF            *p_if)
+static USBH_ERR USBH_CDC_ACM_DescParse(USBH_CDC_ACM_DESC *p_cdc_acm_desc,
+                                       USBH_IF *p_if)
 {
-    USBH_ERR     err;
-    CPU_INT08U  *p_if_desc;
+    USBH_ERR err;
+    CPU_INT08U *p_if_desc;
 
-
-    err       = USBH_ERR_DESC_INVALID;
+    err = USBH_ERR_DESC_INVALID;
     p_if_desc = (CPU_INT08U *)p_if->IF_DataPtr;
 
-    while (p_if_desc[1] != USBH_DESC_TYPE_EP) {
+    while (p_if_desc[1] != USBH_DESC_TYPE_EP)
+    {
 
-        if (p_if_desc[2] == USBH_CDC_FNCTL_DESC_SUB_ACMFD) {
-            p_cdc_acm_desc->bFunctionLength    = p_if_desc[0];
-            p_cdc_acm_desc->bDescriptorType    = p_if_desc[1];
+        if (p_if_desc[2] == USBH_CDC_FNCTL_DESC_SUB_ACMFD)
+        {
+            p_cdc_acm_desc->bFunctionLength = p_if_desc[0];
+            p_cdc_acm_desc->bDescriptorType = p_if_desc[1];
             p_cdc_acm_desc->bDescriptorSubtype = p_if_desc[2];
-            p_cdc_acm_desc->bmCapabilities     = p_if_desc[3];
+            p_cdc_acm_desc->bmCapabilities = p_if_desc[3];
             err = USBH_ERR_NONE;
             break;
-        } else {
+        }
+        else
+        {
             p_if_desc += p_if_desc[0];
         }
     }
 
     return (err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -999,31 +995,34 @@ static  USBH_ERR  USBH_CDC_ACM_DescParse (USBH_CDC_ACM_DESC  *p_cdc_acm_desc,
 *********************************************************************************************************
 */
 
-static  void  USBH_CDC_ACM_SupportedReqEvtsGet (USBH_CDC_ACM_DEV   *p_cdc_acm_dev,
-                                                USBH_CDC_ACM_DESC  *p_cdc_acm_desc)
+static void USBH_CDC_ACM_SupportedReqEvtsGet(USBH_CDC_ACM_DEV *p_cdc_acm_dev,
+                                             USBH_CDC_ACM_DESC *p_cdc_acm_desc)
 {
-    if ((p_cdc_acm_desc->bmCapabilities & 0x01) != 0u) {
+    if ((p_cdc_acm_desc->bmCapabilities & 0x01) != 0u)
+    {
         p_cdc_acm_dev->SupportedRequests.SetCommFeature = DEF_TRUE;
         p_cdc_acm_dev->SupportedRequests.GetCommFeature = DEF_TRUE;
         p_cdc_acm_dev->SupportedRequests.ClrCommFeature = DEF_TRUE;
     }
 
-    if ((p_cdc_acm_desc->bmCapabilities & 0x02) != 0u) {
-        p_cdc_acm_dev->SupportedRequests.SetLineCoding       = DEF_TRUE;
-        p_cdc_acm_dev->SupportedRequests.GetLineCoding       = DEF_TRUE;
+    if ((p_cdc_acm_desc->bmCapabilities & 0x02) != 0u)
+    {
+        p_cdc_acm_dev->SupportedRequests.SetLineCoding = DEF_TRUE;
+        p_cdc_acm_dev->SupportedRequests.GetLineCoding = DEF_TRUE;
         p_cdc_acm_dev->SupportedRequests.SetControlLineState = DEF_TRUE;
-        p_cdc_acm_dev->SupportedEvents.SerialState           = DEF_TRUE;
+        p_cdc_acm_dev->SupportedEvents.SerialState = DEF_TRUE;
     }
 
-    if ((p_cdc_acm_desc->bmCapabilities & 0x04) != 0u) {
+    if ((p_cdc_acm_desc->bmCapabilities & 0x04) != 0u)
+    {
         p_cdc_acm_dev->SupportedRequests.SendBreak = DEF_TRUE;
     }
 
-    if ((p_cdc_acm_desc->bmCapabilities & 0x08) != 0u) {
+    if ((p_cdc_acm_desc->bmCapabilities & 0x08) != 0u)
+    {
         p_cdc_acm_dev->SupportedEvents.NetworkConnection = DEF_TRUE;
     }
 }
-
 
 /*
 *********************************************************************************************************
@@ -1045,13 +1044,12 @@ static  void  USBH_CDC_ACM_SupportedReqEvtsGet (USBH_CDC_ACM_DEV   *p_cdc_acm_de
 *********************************************************************************************************
 */
 
-static  void  USBH_CDC_ACM_DataTxCmpl (void        *p_context,
-                                       CPU_INT08U  *p_buf,
-                                       CPU_INT32U   xfer_len,
-                                       USBH_ERR     err)
+static void USBH_CDC_ACM_DataTxCmpl(void *p_context,
+                                    CPU_INT08U *p_buf,
+                                    CPU_INT32U xfer_len,
+                                    USBH_ERR err)
 {
-    USBH_CDC_ACM_DEV  *p_cdc_acm_dev;
-
+    USBH_CDC_ACM_DEV *p_cdc_acm_dev;
 
     p_cdc_acm_dev = (USBH_CDC_ACM_DEV *)p_context;
 
@@ -1060,7 +1058,6 @@ static  void  USBH_CDC_ACM_DataTxCmpl (void        *p_context,
                                    xfer_len,
                                    err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -1082,13 +1079,12 @@ static  void  USBH_CDC_ACM_DataTxCmpl (void        *p_context,
 *********************************************************************************************************
 */
 
-static  void  USBH_CDC_ACM_DataRxCmpl (void        *p_context,
-                                       CPU_INT08U  *p_buf,
-                                       CPU_INT32U   xfer_len,
-                                       USBH_ERR     err)
+static void USBH_CDC_ACM_DataRxCmpl(void *p_context,
+                                    CPU_INT08U *p_buf,
+                                    CPU_INT32U xfer_len,
+                                    USBH_ERR err)
 {
-    USBH_CDC_ACM_DEV  *p_cdc_acm_dev;
-
+    USBH_CDC_ACM_DEV *p_cdc_acm_dev;
 
     p_cdc_acm_dev = (USBH_CDC_ACM_DEV *)p_context;
 
@@ -1097,7 +1093,6 @@ static  void  USBH_CDC_ACM_DataRxCmpl (void        *p_context,
                                    xfer_len,
                                    err);
 }
-
 
 /*
 *********************************************************************************************************
@@ -1119,28 +1114,31 @@ static  void  USBH_CDC_ACM_DataRxCmpl (void        *p_context,
 *********************************************************************************************************
 */
 
-static  void  USBH_CDC_ACM_EventRxCmpl (void        *p_context,
-                                        CPU_INT08U  *p_buf,
-                                        CPU_INT32U   xfer_len,
-                                        USBH_ERR     err)
+static void USBH_CDC_ACM_EventRxCmpl(void *p_context,
+                                     CPU_INT08U *p_buf,
+                                     CPU_INT32U xfer_len,
+                                     USBH_ERR err)
 {
-    USBH_CDC_ACM_DEV       *p_cdc_acm_dev;
-    USBH_CDC_SERIAL_STATE   serial_state;
-    CPU_INT08U              req;
-    CPU_INT16U              value;
-
+    USBH_CDC_ACM_DEV *p_cdc_acm_dev;
+    USBH_CDC_SERIAL_STATE serial_state;
+    CPU_INT08U req;
+    CPU_INT16U value;
 
     p_cdc_acm_dev = (USBH_CDC_ACM_DEV *)p_context;
 
-    if (err == USBH_ERR_NONE) {
-        if (xfer_len < 1u) {
+    if (err == USBH_ERR_NONE)
+    {
+        if (xfer_len < 1u)
+        {
             return;
         }
 
         req = MEM_VAL_GET_INT08U(p_buf + 1);
 
-        if (req == USBH_CDC_NOTIFICATION_SERIAL_STATE) {
-            if (xfer_len < 10u) {
+        if (req == USBH_CDC_NOTIFICATION_SERIAL_STATE)
+        {
+            if (xfer_len < 10u)
+            {
 #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
                 USBH_PRINT_LOG("Serial state incorrect length\r\n");
 #endif
@@ -1149,27 +1147,31 @@ static  void  USBH_CDC_ACM_EventRxCmpl (void        *p_context,
 
             value = MEM_VAL_GET_INT16U_LITTLE(p_buf + 8);
 
-            serial_state.RxCarrier  = DEF_BIT_IS_SET(value, DEF_BIT_00);
-            serial_state.TxCarrier  = DEF_BIT_IS_SET(value, DEF_BIT_01);
-            serial_state.Break      = DEF_BIT_IS_SET(value, DEF_BIT_02);
+            serial_state.RxCarrier = DEF_BIT_IS_SET(value, DEF_BIT_00);
+            serial_state.TxCarrier = DEF_BIT_IS_SET(value, DEF_BIT_01);
+            serial_state.Break = DEF_BIT_IS_SET(value, DEF_BIT_02);
             serial_state.RingSignal = DEF_BIT_IS_SET(value, DEF_BIT_03);
-            serial_state.Framing    = DEF_BIT_IS_SET(value, DEF_BIT_04);
-            serial_state.Parity     = DEF_BIT_IS_SET(value, DEF_BIT_05);
-            serial_state.OverRun    = DEF_BIT_IS_SET(value, DEF_BIT_06);
+            serial_state.Framing = DEF_BIT_IS_SET(value, DEF_BIT_04);
+            serial_state.Parity = DEF_BIT_IS_SET(value, DEF_BIT_05);
+            serial_state.OverRun = DEF_BIT_IS_SET(value, DEF_BIT_06);
 
-            if (p_cdc_acm_dev->EvtSerialStateNotifyPtr != (USBH_CDC_SERIAL_STATE_NOTIFY)0) {
+            if (p_cdc_acm_dev->EvtSerialStateNotifyPtr != (USBH_CDC_SERIAL_STATE_NOTIFY)0)
+            {
                 p_cdc_acm_dev->EvtSerialStateNotifyPtr(serial_state);
             }
-        } else {
+        }
+        else
+        {
             return;
         }
-    } else {
+    }
+    else
+    {
 #if (USBH_CFG_PRINT_LOG == DEF_ENABLED)
         USBH_PRINT_LOG("CDC ACM Event Rx err: %d\r\n", err);
 #endif
     }
 }
-
 
 /*
 *********************************************************************************************************
@@ -1187,21 +1189,18 @@ static  void  USBH_CDC_ACM_EventRxCmpl (void        *p_context,
 *********************************************************************************************************
 */
 
-static  void  USBH_CDC_ACM_ParseLineCoding (USBH_CDC_LINECODING  *p_linecoding,
-                                            void                *p_buf_src)
+static void USBH_CDC_ACM_ParseLineCoding(USBH_CDC_LINECODING *p_linecoding,
+                                         void *p_buf_src)
 {
-    USBH_CDC_LINECODING  *p_buf_src_linecoding;
-
+    USBH_CDC_LINECODING *p_buf_src_linecoding;
 
     p_buf_src_linecoding = (USBH_CDC_LINECODING *)p_buf_src;
 
-    p_linecoding->dwDTERate   = MEM_VAL_GET_INT32U_LITTLE(&p_buf_src_linecoding->dwDTERate);
+    p_linecoding->dwDTERate = MEM_VAL_GET_INT32U_LITTLE(&p_buf_src_linecoding->dwDTERate);
     p_linecoding->bCharFormat = p_buf_src_linecoding->bCharFormat;
     p_linecoding->bParityTtpe = p_buf_src_linecoding->bParityTtpe;
-    p_linecoding->bDataBits   = p_buf_src_linecoding->bDataBits;
-
+    p_linecoding->bDataBits = p_buf_src_linecoding->bDataBits;
 }
-
 
 /*
 *********************************************************************************************************
@@ -1219,16 +1218,15 @@ static  void  USBH_CDC_ACM_ParseLineCoding (USBH_CDC_LINECODING  *p_linecoding,
 *********************************************************************************************************
 */
 
-static  void  USBH_CDC_ACM_FmtLineCoding (USBH_CDC_LINECODING  *p_linecoding,
-                                          void                 *p_buf_dest)
+static void USBH_CDC_ACM_FmtLineCoding(USBH_CDC_LINECODING *p_linecoding,
+                                       void *p_buf_dest)
 {
-    USBH_CDC_LINECODING  *p_buf_dest_linecoding;
-
+    USBH_CDC_LINECODING *p_buf_dest_linecoding;
 
     p_buf_dest_linecoding = (USBH_CDC_LINECODING *)p_buf_dest;
 
-    p_buf_dest_linecoding->dwDTERate   = MEM_VAL_GET_INT32U_LITTLE(&p_linecoding->dwDTERate);
+    p_buf_dest_linecoding->dwDTERate = MEM_VAL_GET_INT32U_LITTLE(&p_linecoding->dwDTERate);
     p_buf_dest_linecoding->bCharFormat = p_linecoding->bCharFormat;
     p_buf_dest_linecoding->bParityTtpe = p_linecoding->bParityTtpe;
-    p_buf_dest_linecoding->bDataBits   = p_linecoding->bDataBits;
+    p_buf_dest_linecoding->bDataBits = p_linecoding->bDataBits;
 }
