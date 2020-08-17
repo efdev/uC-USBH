@@ -1,3 +1,9 @@
+/*
+ * Copyright (c) 2020 PHYTEC Messtechnik GmbH
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #ifndef _USBH_LIB_MEM_H_
 #define _USBH_LIB_MEM_H_
 
